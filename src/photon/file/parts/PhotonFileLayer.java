@@ -24,10 +24,12 @@
 
 package photon.file.parts;
 
-import photon.file.PhotonFile;
-
 import java.io.ByteArrayInputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Hashtable;
+import java.util.List;
 
 /**
  * by bn on 01/07/2018.
@@ -178,7 +180,8 @@ public class PhotonFileLayer {
         }
     }
 
-    private void calculate(ArrayList<BitSet> unpackedImage, ArrayList<BitSet> previousUnpackedImage, PhotonLayer photonLayer) {
+    private void calculate(ArrayList<BitSet> unpackedImage, ArrayList<BitSet> previousUnpackedImage,
+        PhotonLayer photonLayer, PhotonLayer previousLayer) {
         islandRows = new ArrayList<>();
         isLandsCount = 0;
 
@@ -191,7 +194,11 @@ public class PhotonFileLayer {
                 for (int x = 0; x < currentRow.length(); x++) {
                     if (currentRow.get(x)) {
                         if (prevRow == null || prevRow.get(x)) {
-                            photonLayer.supported(x, y);
+                            if (previousLayer != null && previousLayer.get(x,y) == PhotonLayer.ISLAND) {
+                                photonLayer.supportedByIsland(x, y);
+                            } else {
+                                photonLayer.supported(x, y);
+                            }
                         } else {
                             photonLayer.island(x, y);
                         }
@@ -313,8 +320,10 @@ public class PhotonFileLayer {
     }
 
     public static void calculateLayers(PhotonFileHeader photonFileHeader, List<PhotonFileLayer> layers, int margin, IPhotonProgress iPhotonProgress) throws Exception {
-        PhotonLayer photonLayer = new PhotonLayer(photonFileHeader.getResolutionX(), photonFileHeader.getResolutionY());
         ArrayList<BitSet> previousUnpackedImage = null;
+        PhotonLayer photonLayer = new PhotonLayer(photonFileHeader.getResolutionX(), photonFileHeader.getResolutionY());
+        PhotonLayer previousLayer = new PhotonLayer(photonFileHeader.getResolutionX(), photonFileHeader.getResolutionY());
+        PhotonLayer tmp;
         int i = 0;
         for (PhotonFileLayer layer : layers) {
             ArrayList<BitSet> unpackedImage = layer.unpackImage(photonFileHeader.getResolutionX());
@@ -327,7 +336,7 @@ public class PhotonFileLayer {
 
             layer.unknownPixels(unpackedImage, photonLayer);
 
-            layer.calculate(unpackedImage, previousUnpackedImage, photonLayer);
+            layer.calculate(unpackedImage, previousUnpackedImage, photonLayer, previousLayer);
 
             if (previousUnpackedImage != null) {
                 previousUnpackedImage.clear();
@@ -346,15 +355,20 @@ public class PhotonFileLayer {
                     aaFileLayer.isCalculated = false;
                 }
             }
-
+            tmp = previousLayer;
+            previousLayer = photonLayer;
+            photonLayer = tmp;
             i++;
         }
         photonLayer.unLink();
+        previousLayer.unLink();
         System.gc();
     }
 
     public static void calculateLayers(PhotonFileHeader photonFileHeader, List<PhotonFileLayer> layers, int margin, int layerNo) throws Exception {
         PhotonLayer photonLayer = new PhotonLayer(photonFileHeader.getResolutionX(), photonFileHeader.getResolutionY());
+        PhotonLayer previousLayer = new PhotonLayer(photonFileHeader.getResolutionX(), photonFileHeader.getResolutionY());
+        PhotonLayer tmp;
         ArrayList<BitSet> previousUnpackedImage = null;
 
         if (layerNo > 0) {
@@ -371,7 +385,7 @@ public class PhotonFileLayer {
 
             layer.unknownPixels(unpackedImage, photonLayer);
 
-            layer.calculate(unpackedImage, previousUnpackedImage, photonLayer);
+            layer.calculate(unpackedImage, previousUnpackedImage, photonLayer, previousLayer);
 
             if (previousUnpackedImage != null) {
                 previousUnpackedImage.clear();
@@ -381,9 +395,13 @@ public class PhotonFileLayer {
             layer.packedLayerImage = photonLayer.packLayerImage();
             layer.isCalculated = true;
 
+            tmp = previousLayer;
+            previousLayer = photonLayer;
+            photonLayer = tmp;
             i++;
         }
         photonLayer.unLink();
+        previousLayer.unLink();
         System.gc();
     }
 

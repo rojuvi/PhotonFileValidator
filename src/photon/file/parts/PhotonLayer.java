@@ -87,6 +87,13 @@ public class PhotonLayer {
         pixels[y]++;
     }
 
+    public void supportedByIsland(int x, int y) {
+        // TODO change this to add new color
+        iArray[y][x] = CONNECTED;
+        rowUnsupported[y]++;
+        pixels[y]++;
+    }
+
     public void island(int x, int y) {
         iArray[y][x] = ISLAND;
         rowIslands[y]++;
@@ -421,4 +428,7 @@ public class PhotonLayer {
         return iArray[y][x];
     }
 
+    public byte[][] getiArray() {
+        return iArray;
+    }
 }
