@@ -70,6 +70,10 @@ public class PhotonEditPanel extends JPanel {
                         g.setColor(Color.decode("#008800"));
                         break;
 
+                    case PhotonLayer.ISLAND_SUPPORT:
+                        g.setColor(Color.decode("#FF8800"));
+                        break;
+
                     case PhotonLayer.CONNECTED:
                         g.setColor(Color.decode("#FFFF00"));
                         break;

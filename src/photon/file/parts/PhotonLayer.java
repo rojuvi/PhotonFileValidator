@@ -40,6 +40,7 @@ public class PhotonLayer {
     public final static byte SUPPORTED = 0x01;
     public final static byte ISLAND = 0x02;
     public final static byte CONNECTED = 0x03;
+    public final static byte ISLAND_SUPPORT = 0x04;
 
     private int width;
     private int height;
@@ -49,6 +50,7 @@ public class PhotonLayer {
     private int[] pixels;
     private int[] rowIslands;
     private int[] rowUnsupported;
+    private int[] rowIslandSupported;
     private int[] rowSupported;
 
     public PhotonLayer(int width, int height) {
@@ -59,6 +61,7 @@ public class PhotonLayer {
         pixels = new int[height];
         rowIslands = new int[height];
         rowUnsupported = new int[height];
+        rowIslandSupported = new int[height];
         rowSupported = new int[height];
 
     }
@@ -87,6 +90,12 @@ public class PhotonLayer {
         pixels[y]++;
     }
 
+    public void supportedByIsland(int x, int y) {
+        iArray[y][x] = ISLAND_SUPPORT;
+        rowIslandSupported[y]++;
+        pixels[y]++;
+    }
+
     public void island(int x, int y) {
         iArray[y][x] = ISLAND;
         rowIslands[y]++;
@@ -98,7 +107,10 @@ public class PhotonLayer {
         iArray[y][x] = OFF;
         switch (type) {
             case SUPPORTED:
-                rowUnsupported[y]--;
+                rowSupported[y]--;
+                break;
+            case ISLAND_SUPPORT:
+                rowIslandSupported[y]--;
                 break;
             case CONNECTED:
                 rowUnsupported[y]--;
@@ -121,8 +133,14 @@ public class PhotonLayer {
                         for (int x = 0; x < width; x++) {
                             if (iArray[y][x] == ISLAND) {
                                 if (connected(x, y)) {
-                                    makeConnected(x, y);
-                                    checkUp(x, y);
+                                    transformIslandTo(x, y, CONNECTED);
+                                    checkUp(x, y, CONNECTED);
+                                    if (rowIslands[y] == 0) {
+                                        break;
+                                    }
+                                } else if (connectedToIslandSupported(x, y)) {
+                                    transformIslandTo(x, y, ISLAND_SUPPORT);
+                                    checkUp(x, y, ISLAND_SUPPORT);
                                     if (rowIslands[y] == 0) {
                                         break;
                                     }
@@ -135,46 +153,67 @@ public class PhotonLayer {
         }
     }
 
-    private void checkUp(int x, int y) {
+    private void checkUp(int x, int y, byte type) {
         if (y > 0 && rowIslands[y - 1] > 0 && iArray[y - 1][x] == ISLAND) {
-            makeConnected(x, y - 1);
-            checkUp(x, y - 1);
+            transformIslandTo(x, y - 1, type);
+            checkUp(x, y - 1, type);
         }
         if (x > 0 && rowIslands[y] > 0 && iArray[y][x - 1] == ISLAND) {
-            makeConnected(x - 1, y);
-            checkBackUp(x - 1, y);
+            transformIslandTo(x - 1, y, type);
+            checkBackUp(x - 1, y, type);
         }
         if (x < (width-1) && rowIslands[y] > 0 && iArray[y][x + 1] == ISLAND) {
-            makeConnected(x + 1, y);
-            checkFrontUp(x + 1, y);
+            transformIslandTo(x + 1, y, type);
+            checkFrontUp(x + 1, y, type);
         }
     }
 
-    private void checkBackUp(int x, int y) {
+    private void checkBackUp(int x, int y, byte type) {
         if (y > 0 && rowIslands[y - 1] > 0 && iArray[y - 1][x] == ISLAND) {
-            makeConnected(x, y - 1);
-            checkBackUp(x, y - 1);
+            transformIslandTo(x, y - 1, type);
+            checkBackUp(x, y - 1, type);
         }
         if (x > 0 && rowIslands[y] > 0 && iArray[y][x - 1] == ISLAND) {
-            makeConnected(x - 1, y);
-            checkBackUp(x - 1, y);
+            transformIslandTo(x - 1, y, type);
+            checkBackUp(x - 1, y, type);
         }
     }
 
-    private void checkFrontUp(int x, int y) {
+    private void checkFrontUp(int x, int y, byte type) {
         if (y > 0 && rowIslands[y - 1] > 0 && iArray[y - 1][x] == ISLAND) {
-            makeConnected(x, y - 1);
-            checkFrontUp(x, y - 1);
+            transformIslandTo(x, y - 1, type);
+            checkFrontUp(x, y - 1, type);
         }
         if (x < (width-1) && rowIslands[y] > 0 && iArray[y][x + 1] == ISLAND) {
-            makeConnected(x + 1, y);
-            checkFrontUp(x + 1, y);
+            transformIslandTo(x + 1, y, type);
+            checkFrontUp(x + 1, y, type);
         }
     }
 
-    private void makeConnected(int x, int y) {
-        iArray[y][x] = CONNECTED;
-        rowSupported[y]++;
+    private void transformIslandTo(int x, int y, byte type) {
+        switch (type) {
+            case OFF:
+                // Nothing to do here
+                break;
+            case SUPPORTED:
+                rowSupported[y]++;
+                break;
+            case ISLAND:
+                // You are turning an island into an island??
+                rowIslands[y]++;
+                islandCount++;
+                break;
+            case CONNECTED:
+                rowUnsupported[y]++;
+                break;
+            case ISLAND_SUPPORT:
+                rowIslandSupported[y]++;
+                break;
+            default:
+                throw new IllegalArgumentException("The transform type " + String.format("%02x", type) + " is not valid.");
+        }
+
+        iArray[y][x] = type;
         rowIslands[y]--;
         islandCount--;
     }
@@ -184,6 +223,13 @@ public class PhotonLayer {
                 || x < (width - 1) && (iArray[y][x + 1] & 0x01) == SUPPORTED
                 || y > 0 && (iArray[y - 1][x] & 0x01) == SUPPORTED
                 || (y < (height - 1) && (iArray[y + 1][x] & 0x01) == SUPPORTED);
+    }
+
+    private boolean connectedToIslandSupported(int x, int y) {
+        return x > 0 && (iArray[y][x - 1]) == ISLAND_SUPPORT
+                || x < (width - 1) && (iArray[y][x + 1]) == ISLAND_SUPPORT
+                || y > 0 && (iArray[y - 1][x]) == ISLAND_SUPPORT
+                || (y < (height - 1) && (iArray[y + 1][x]) == ISLAND_SUPPORT);
     }
 
     public int setIslands(ArrayList<BitSet> islandRows) {
@@ -247,10 +293,10 @@ public class PhotonLayer {
         int y = 0;
         for (int i = 0; i < packedLayerImage.length; i++) {
             byte rle = packedLayerImage[i];
-            byte colorCode = (byte) ((rle & 0x60) >> 5);
+            byte colorCode = getColorCodeFromPackedImageBytes(rle);
 
             boolean extended = (rle & 0x80) == 0x80;
-            int length = rle & 0x1F;
+            int length = rle & 0x0F;
             if (extended) {
                 i++;
                 length = (length << 8) | packedLayerImage[i] & 0x00ff;
@@ -263,6 +309,9 @@ public class PhotonLayer {
                         break;
                     case CONNECTED:
                         unSupported(xi, y);
+                        break;
+                    case ISLAND_SUPPORT:
+                        supportedByIsland(xi, y);
                         break;
                     case ISLAND:
                         island(xi, y);
@@ -278,14 +327,18 @@ public class PhotonLayer {
 
     }
 
+    private static byte getColorCodeFromPackedImageBytes(byte rle) {
+        return (byte) ((rle & 0x70) >> 4);
+    }
+
     private void add(ByteArrayOutputStream baos, byte current, int length) throws IOException {
-        if (length < 32) {
+        if (length < 16) {
             byte[] data = new byte[1];
-            data[0] = (byte) ((current << 5) | (length & 0x1f));
+            data[0] = (byte) ((current << 4) | (length & 0x0f));
             baos.write(data);
         } else {
             byte[] data = new byte[2];
-            data[0] = (byte) (0x80 | (current << 5) | (length >> 8 & 0x00FF));
+            data[0] = (byte) (0x80 | (current << 4) | (length >> 8 & 0x00FF));
             data[1] = (byte) (length & 0x00FF);
             baos.write(data);
         }
@@ -309,6 +362,7 @@ public class PhotonLayer {
             colors.put(SUPPORTED, Color.decode("#000088"));
         }
         colors.put(CONNECTED, Color.decode("#FFFF00"));
+        colors.put(ISLAND_SUPPORT, Color.decode("#FF8800"));
         colors.put(ISLAND, Color.decode("#FF0000"));
         ArrayList<PhotonRow> rows = new ArrayList<>();
         int resolutionX = width - 1;
@@ -318,10 +372,10 @@ public class PhotonLayer {
         if (packedLayerImage!=null) { // when user tries to show a layer before its calculated
             for (int i = 0; i < packedLayerImage.length; i++) {
                 byte rle = packedLayerImage[i];
-                byte colorCode = (byte) ((rle & 0x60) >> 5);
+                byte colorCode = getColorCodeFromPackedImageBytes(rle);
                 Color color = colors.get(colorCode);
                 boolean extended = (rle & 0x80) == 0x80;
-                int length = rle & 0x1F;
+                int length = rle & 0x0F;
                 if (extended) {
                     i++;
                     length = (length << 8) | packedLayerImage[i] & 0x00ff;
@@ -421,4 +475,23 @@ public class PhotonLayer {
         return iArray[y][x];
     }
 
+    public byte[][] getiArray() {
+        return iArray;
+    }
+
+    public int[] getRowIslands() {
+        return rowIslands;
+    }
+
+    public int[] getRowUnsupported() {
+        return rowUnsupported;
+    }
+
+    public int[] getRowIslandSupported() {
+        return rowIslandSupported;
+    }
+
+    public int[] getRowSupported() {
+        return rowSupported;
+    }
 }

@@ -56,7 +56,7 @@ public class ResinLayer extends RenderAsSegment {
                 for (PhotonLine line : row.lines) {
                     int end = i + line.length;
                     if (line.color.getRGB() != black) {
-                        if (type== PhotonLayer.OFF || (type==PhotonLayer.SUPPORTED && line.color.getRGB() != red) || (type==PhotonLayer.ISLAND && line.color.getRGB() == red)) {
+                        if (type== PhotonLayer.OFF || ((type==PhotonLayer.SUPPORTED || type==PhotonLayer.ISLAND_SUPPORT) && line.color.getRGB() != red) || (type==PhotonLayer.ISLAND && line.color.getRGB() == red)) {
                             iTransformables.add(new Segment(new Vertex(x1 + columnNumber, y1 + i, z), new Vertex(x1 + columnNumber, y1 + end, z)));
                         }
                     }
