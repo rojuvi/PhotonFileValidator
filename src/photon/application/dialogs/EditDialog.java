@@ -37,7 +37,6 @@ import photon.file.ui.PhotonEditPanel;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.security.PublicKey;
 import java.util.HashSet;
 
 public class EditDialog extends JDialog {
@@ -155,7 +154,6 @@ public class EditDialog extends JDialog {
         }
 
         Color color = onOff ? Color.darkGray : Color.cyan;
-        ;
         ((PhotonEditPanel) editArea).drawDot(x, y, layer, color);
         editArea.repaint();
     }
@@ -183,6 +181,9 @@ public class EditDialog extends JDialog {
 
                 case PhotonLayer.ISLAND:
                     return Color.decode("#FF0000");
+
+                case PhotonLayer.ISLAND_SUPPORT:
+                    return Color.decode("#FF8800");
 
                 default:
                     return Color.black;

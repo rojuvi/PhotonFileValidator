@@ -25,11 +25,7 @@
 package photon.file.parts;
 
 import java.io.ByteArrayInputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Hashtable;
-import java.util.List;
+import java.util.*;
 
 /**
  * by bn on 01/07/2018.
@@ -180,8 +176,18 @@ public class PhotonFileLayer {
         }
     }
 
-    private void calculate(ArrayList<BitSet> unpackedImage, ArrayList<BitSet> previousUnpackedImage,
-        PhotonLayer photonLayer, PhotonLayer previousLayer) {
+    /**
+     * Calculates the type of pixels for the layer taking into account the previous one
+     *
+     * @param unpackedImage
+     * @param previousUnpackedImage
+     * @param photonLayer
+     * @param previousLayer
+     * @return true if anything has changed
+     */
+    private boolean calculate(ArrayList<BitSet> unpackedImage, ArrayList<BitSet> previousUnpackedImage,
+                              PhotonLayer photonLayer, PhotonLayer previousLayer, PhotonLayer oldLayer) {
+        boolean hasAnythingChanged = false;
         islandRows = new ArrayList<>();
         isLandsCount = 0;
 
@@ -194,7 +200,8 @@ public class PhotonFileLayer {
                 for (int x = 0; x < currentRow.length(); x++) {
                     if (currentRow.get(x)) {
                         if (prevRow == null || prevRow.get(x)) {
-                            if (previousLayer != null && previousLayer.get(x,y) == PhotonLayer.ISLAND) {
+                            if (previousLayer != null && (previousLayer.get(x, y) == PhotonLayer.ISLAND
+                                    || (previousLayer.get(x, y) == PhotonLayer.ISLAND_SUPPORT))) {
                                 photonLayer.supportedByIsland(x, y);
                             } else {
                                 photonLayer.supported(x, y);
@@ -210,6 +217,10 @@ public class PhotonFileLayer {
         photonLayer.reduce();
 
         isLandsCount = photonLayer.setIslands(islandRows);
+        if (oldLayer != null) {
+            hasAnythingChanged = !Arrays.deepEquals(photonLayer.getiArray(), oldLayer.getiArray());
+        }
+        return hasAnythingChanged;
     }
 
 
@@ -336,7 +347,7 @@ public class PhotonFileLayer {
 
             layer.unknownPixels(unpackedImage, photonLayer);
 
-            layer.calculate(unpackedImage, previousUnpackedImage, photonLayer, previousLayer);
+            layer.calculate(unpackedImage, previousUnpackedImage, photonLayer, previousLayer, null);
 
             if (previousUnpackedImage != null) {
                 previousUnpackedImage.clear();
@@ -367,15 +378,18 @@ public class PhotonFileLayer {
 
     public static void calculateLayers(PhotonFileHeader photonFileHeader, List<PhotonFileLayer> layers, int margin, int layerNo) throws Exception {
         PhotonLayer photonLayer = new PhotonLayer(photonFileHeader.getResolutionX(), photonFileHeader.getResolutionY());
+        PhotonLayer oldLayer = new PhotonLayer(photonFileHeader.getResolutionX(), photonFileHeader.getResolutionY());
         PhotonLayer previousLayer = new PhotonLayer(photonFileHeader.getResolutionX(), photonFileHeader.getResolutionY());
         PhotonLayer tmp;
         ArrayList<BitSet> previousUnpackedImage = null;
 
         if (layerNo > 0) {
-            previousUnpackedImage = layers.get(layerNo - 1).unpackImage(photonFileHeader.getResolutionX());
+            PhotonFileLayer previousFileLayer = layers.get(layerNo - 1);
+            previousUnpackedImage = previousFileLayer.unpackImage(photonFileHeader.getResolutionX());
+            previousLayer.unpackLayerImage(previousFileLayer.packedLayerImage);
         }
-
-        for (int i = 0; i < 2; i++) {
+        boolean layerChanged = false;
+        for (int i = 0; i < 2 || layerChanged; i++) {
             PhotonFileLayer layer = layers.get(layerNo + i);
             ArrayList<BitSet> unpackedImage = layer.unpackImage(photonFileHeader.getResolutionX());
 
@@ -385,7 +399,8 @@ public class PhotonFileLayer {
 
             layer.unknownPixels(unpackedImage, photonLayer);
 
-            layer.calculate(unpackedImage, previousUnpackedImage, photonLayer, previousLayer);
+            oldLayer.unpackLayerImage(layer.packedLayerImage);
+            layerChanged = layer.calculate(unpackedImage, previousUnpackedImage, photonLayer, previousLayer, oldLayer);
 
             if (previousUnpackedImage != null) {
                 previousUnpackedImage.clear();
@@ -398,7 +413,6 @@ public class PhotonFileLayer {
             tmp = previousLayer;
             previousLayer = photonLayer;
             photonLayer = tmp;
-            i++;
         }
         photonLayer.unLink();
         previousLayer.unLink();

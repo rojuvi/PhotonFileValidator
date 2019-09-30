@@ -24,7 +24,6 @@
 
 package photon.file.ui;
 
-import photon.file.PhotonFile;
 import photon.file.parts.PhotonFileLayer;
 import photon.file.parts.PhotonLayer;
 
@@ -32,7 +31,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import java.util.Map;
 
 public class PhotonAaPanel extends JPanel {
     private int width;
@@ -89,6 +87,9 @@ public class PhotonAaPanel extends JPanel {
                             case PhotonLayer.SUPPORTED:
                                 color += colorDiv;
                                 break;
+                            case PhotonLayer.ISLAND_SUPPORT:
+                                color += colorDiv;
+                                break;
                         }
                     }
 
@@ -103,6 +104,9 @@ public class PhotonAaPanel extends JPanel {
                         case PhotonLayer.ISLAND:
                         case PhotonLayer.CONNECTED:
                         case PhotonLayer.SUPPORTED:
+                            g.setColor(Color.decode("#FFFFFF"));
+                            break;
+                        case PhotonLayer.ISLAND_SUPPORT:
                             g.setColor(Color.decode("#FFFFFF"));
                             break;
 

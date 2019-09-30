@@ -54,11 +54,10 @@ public class PhotonMatix {
                         case PhotonLayer.CONNECTED:
                             calcMatrix[yi][xi] = 16;
                             break;
-
+                        case PhotonLayer.ISLAND_SUPPORT:
                         case PhotonLayer.ISLAND:
                             calcMatrix[yi][xi] = 4;
                             break;
-
                         case PhotonLayer.OFF:
                             if (yi > 0 && yi < 4 && xi > 0 && xi < 4) {
                                 blanks++;
