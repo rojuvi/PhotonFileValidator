@@ -24,14 +24,13 @@
 
 package photon.application.base;
 
-import photon.application.render.OnionPanel;
 import photon.application.MainForm;
 import photon.application.dialogs.*;
+import photon.application.render.OnionPanel;
 import photon.application.render.storage.RotationBaseMatrix;
 import photon.application.utilities.MainUtils;
 import photon.application.utilities.PhotonCalcWorker;
 import photon.application.utilities.PhotonLoadWorker;
-import photon.application.utilities.PhotonPlayWorker;
 import photon.file.PhotonFile;
 import photon.file.parts.PhotonFileLayer;
 import photon.file.parts.PhotonFilePreview;
@@ -153,6 +152,17 @@ public class BaseForm {
 
     }
 
+    protected void showRemoveIslands() {
+        if (me.removeIslandsDialog == null) {
+            me.removeIslandsDialog = new RemoveIslandsDialog(me);
+        }
+        me.removeIslandsDialog.setInformation(photonFile);
+        me.removeIslandsDialog.setSize(new Dimension(650, 430));
+        me.removeIslandsDialog.setLocationRelativeTo(me.frame);
+        me.removeIslandsDialog.setVisible(true);
+
+    }
+
     protected void showPreview(boolean large) {
         PhotonFilePreview preview = large ? me.photonFile.getPreviewOne() : me.photonFile.getPreviewTwo();
         if (me.previewDialog == null) {
@@ -260,6 +270,7 @@ public class BaseForm {
         me.islandNextBtn.setEnabled(hasIslands);
         me.islandPrevBtn.setEnabled(hasIslands);
         me.fixBtn.setEnabled(hasIslands);
+        me.removeIslandsButton.setEnabled(hasIslands);
 
         boolean hasMargins = photonFile.getMarginLayers().size() > 0;
         me.marginInfo.setForeground(hasMargins ? Color.red : Color.decode("#006600"));
@@ -284,6 +295,7 @@ public class BaseForm {
                     me.marginInfo.setText("Margin set to: " + me.margin);
                 } catch (Exception e) {
                     me.margin = 0;
+                    e.printStackTrace();
                 }
 
                 float peel;
@@ -291,6 +303,7 @@ public class BaseForm {
                     peel = Float.parseFloat(prop.getProperty("peel"));
                 } catch (Exception ex) {
                     peel = 5.5f;
+                    ex.printStackTrace();
                 }
                 if (me.informationDialog == null) {
                     me.informationDialog = new InformationDialog(me.frame);

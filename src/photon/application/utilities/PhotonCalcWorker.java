@@ -25,7 +25,6 @@
 package photon.application.utilities;
 
 import photon.application.MainForm;
-import photon.file.PhotonFile;
 import photon.file.parts.IPhotonProgress;
 
 import javax.swing.*;
@@ -69,6 +68,7 @@ public class PhotonCalcWorker extends SwingWorker<Integer, String> implements IP
         } catch (Exception e) {
             mainForm.marginInfo.setForeground(Color.red);
             mainForm.marginInfo.setText("Could not calculate the file.");
+            e.printStackTrace();
             return 0;
         }
         return 1;

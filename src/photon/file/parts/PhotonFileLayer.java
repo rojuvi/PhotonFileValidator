@@ -47,6 +47,9 @@ public class PhotonFileLayer {
 
     private ArrayList<BitSet> islandRows;
     private int isLandsCount;
+
+    private ArrayList<BitSet> islandSupportedRows;
+    private int islandSupportedCount;
     private long pixels;
 
     private ArrayList<PhotonFileLayer> antiAliasLayers = new ArrayList<>();
@@ -189,6 +192,7 @@ public class PhotonFileLayer {
                               PhotonLayer photonLayer, PhotonLayer previousLayer, PhotonLayer oldLayer) {
         boolean hasAnythingChanged = false;
         islandRows = new ArrayList<>();
+        islandSupportedRows = new ArrayList<>();
         isLandsCount = 0;
 
         photonLayer.clear();
@@ -217,6 +221,7 @@ public class PhotonFileLayer {
         photonLayer.reduce();
 
         isLandsCount = photonLayer.setIslands(islandRows);
+        islandSupportedCount = photonLayer.setIslandSupported(islandSupportedRows);
         if (oldLayer != null) {
             hasAnythingChanged = !Arrays.deepEquals(photonLayer.getiArray(), oldLayer.getiArray());
         }
@@ -430,6 +435,9 @@ public class PhotonFileLayer {
     public int getIsLandsCount() {
         return isLandsCount;
     }
+    public int getIslandSupportedCount() {
+        return islandSupportedCount;
+    }
 
     public long getPixels() {
         return pixels;
@@ -464,6 +472,9 @@ public class PhotonFileLayer {
         packedLayerImage = null;
         if (islandRows != null) {
             islandRows.clear();
+        }
+        if (islandSupportedRows != null) {
+            islandSupportedRows.clear();
         }
         photonFileHeader = null;
     }
@@ -515,7 +526,9 @@ public class PhotonFileLayer {
 
     public void updateLayerIslands(PhotonLayer photonLayer) {
         islandRows = new ArrayList<>();
+        islandSupportedRows = new ArrayList<>();
         isLandsCount = photonLayer.setIslands(islandRows);
+        islandSupportedCount = photonLayer.setIslandSupported(islandSupportedRows);
     }
 
     public void saveLayer(PhotonLayer photonLayer) throws Exception {
@@ -523,7 +536,9 @@ public class PhotonFileLayer {
         this.imageData = photonLayer.packImageData();
         this.dataSize = imageData.length;
         islandRows = new ArrayList<>();
+        islandSupportedRows = new ArrayList<>();
         isLandsCount = photonLayer.setIslands(islandRows);
+        islandSupportedCount = photonLayer.setIslandSupported(islandSupportedRows);
     }
 
     public ArrayList<BitSet> getUnknownRows() {
@@ -539,5 +554,54 @@ public class PhotonFileLayer {
 
     public ArrayList<PhotonFileLayer> getAntiAlias() {
         return antiAliasLayers;
+    }
+
+    public Set<PhotonRect> getIslandsRects() {
+        Set<PhotonRect> islandsRects = new HashSet<>();
+        PhotonLayer layer = new PhotonLayer(photonFileHeader.getResolutionX(), photonFileHeader.getResolutionY());
+        layer.unpackLayerImage(this.packedLayerImage);
+        int[] rowIslands = layer.getRowIslands();
+        int[] rowIslandSupported = layer.getRowIslandSupported();
+        for (int x = 0; x < Math.max(rowIslands.length, rowIslandSupported.length); x++) {
+            if (x < rowIslands.length && rowIslands[x] > 0) {
+                addCollidingRects(islandRows.get(x), x, islandsRects);
+            }
+            if (x < rowIslandSupported.length && rowIslandSupported[x] > 0) {
+                addCollidingRects(islandSupportedRows.get(x), x, islandsRects);
+            }
+        }
+        return islandsRects;
+    }
+
+    private void addCollidingRects(BitSet cols, int x, Set<PhotonRect> islandsRects) {
+        List<PhotonRect> rowRects = findRects(cols, x);
+        for (PhotonRect rowRect : rowRects) {
+            for (PhotonRect prevLayerRect : islandsRects) {
+                if (prevLayerRect.inContactWith(rowRect)) {
+                    prevLayerRect.merge(rowRect);
+                    rowRect = prevLayerRect;
+                }
+            }
+            islandsRects.add(rowRect);
+        }
+    }
+
+    private List<PhotonRect> findRects(BitSet cols, int x) {
+        List<PhotonRect> rects = new ArrayList<>();
+        int pos = 0;
+        while (pos < cols.size()) {
+            int start = cols.nextSetBit(pos);
+            if (start < cols.size() && start > -1) {
+                int end = cols.nextClearBit(start);
+                pos = end;
+                if (end == -1) {
+                    end = cols.size() - 1;
+                }
+                rects.add(new PhotonRect(x, start, x, end));
+            } else {
+                break;
+            }
+        }
+        return rects;
     }
 }

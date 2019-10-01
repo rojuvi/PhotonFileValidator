@@ -249,6 +249,23 @@ public class PhotonLayer {
         return islands;
     }
 
+    public int setIslandSupported(ArrayList<BitSet> islandSupportedRows) {
+        int islands = 0;
+        for (int y = 0; y < height; y++) {
+            BitSet bitSet = new BitSet();
+            if (rowIslandSupported[y] > 0) {
+                for (int x = 0; x < width; x++) {
+                    if (iArray[y][x] == ISLAND_SUPPORT) {
+                        bitSet.set(x);
+                    }
+                }
+            }
+            islandSupportedRows.add(bitSet);
+            islands += rowIslandSupported[y];
+        }
+        return islands;
+    }
+
     public void unLink() {
         iArray = null;
         pixels = null;

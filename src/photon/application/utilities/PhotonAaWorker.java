@@ -81,6 +81,7 @@ public class PhotonAaWorker extends SwingWorker<Integer, String> implements IPho
         } catch (Exception e) {
             mainForm.marginInfo.setForeground(Color.red);
             mainForm.marginInfo.setText("Could not AA calculate the file.");
+            e.printStackTrace();
             return 0;
         }
         return 1;

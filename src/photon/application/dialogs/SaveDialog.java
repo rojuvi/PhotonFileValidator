@@ -27,7 +27,6 @@ package photon.application.dialogs;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
-import com.sun.javafx.binding.StringFormatter;
 import photon.application.MainForm;
 import photon.file.PhotonFile;
 import photon.file.parts.PhotonFileHeader;
@@ -79,11 +78,15 @@ public class SaveDialog extends JDialog {
         getRootPane().setDefaultButton(buttonOK);
 
         buttonOK.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {onOK();}
+            public void actionPerformed(ActionEvent e) {
+                onOK();
+            }
         });
 
         buttonCancel.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {onCancel();}
+            public void actionPerformed(ActionEvent e) {
+                onCancel();
+            }
         });
 
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
@@ -162,6 +165,7 @@ public class SaveDialog extends JDialog {
         } catch (Exception e) {
             mainForm.marginInfo.setForeground(Color.red);
             mainForm.marginInfo.setText(e.getMessage());
+            e.printStackTrace();
         }
         dispose();
     }
@@ -358,6 +362,8 @@ public class SaveDialog extends JDialog {
     /**
      * @noinspection ALL
      */
-    public JComponent $$$getRootComponent$$$() { return contentPane; }
+    public JComponent $$$getRootComponent$$$() {
+        return contentPane;
+    }
 
 }

@@ -31,8 +31,6 @@ import photon.file.parts.PhotonFileLayer;
 import photon.file.ui.PhotonLayerImage;
 
 import javax.swing.*;
-import java.awt.*;
-import java.io.File;
 
 public class PhotonPlayWorker extends SwingWorker<Integer, String> implements IPhotonProgress {
     private MainForm mainForm;
@@ -95,6 +93,7 @@ public class PhotonPlayWorker extends SwingWorker<Integer, String> implements IP
                     Thread.sleep(miliseconds);
                 } catch (Exception e) {
                     // ignore...
+                    e.printStackTrace();
                 }
                 if (!mainForm.playing) {
                     break;
@@ -102,6 +101,7 @@ public class PhotonPlayWorker extends SwingWorker<Integer, String> implements IP
             }
 
         } catch (Exception e) {
+            e.printStackTrace();
             return 0;
         }
         return 1;

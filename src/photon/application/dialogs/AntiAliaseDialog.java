@@ -75,7 +75,9 @@ public class AntiAliaseDialog extends JDialog {
 
 
         buttonOK.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {onOK();}
+            public void actionPerformed(ActionEvent e) {
+                onOK();
+            }
         });
 
         aaLevel.addChangeListener(new ChangeListener() {
@@ -193,6 +195,8 @@ public class AntiAliaseDialog extends JDialog {
     /**
      * @noinspection ALL
      */
-    public JComponent $$$getRootComponent$$$() { return contentPane; }
+    public JComponent $$$getRootComponent$$$() {
+        return contentPane;
+    }
 
 }

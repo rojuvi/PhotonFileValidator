@@ -59,7 +59,9 @@ public class FixDialog extends JDialog {
         getRootPane().setDefaultButton(buttonOK);
 
         buttonOK.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {onOK();}
+            public void actionPerformed(ActionEvent e) {
+                onOK();
+            }
         });
 
         startButton.addActionListener(new ActionListener() {
@@ -164,5 +166,8 @@ public class FixDialog extends JDialog {
     /**
      * @noinspection ALL
      */
-    public JComponent $$$getRootComponent$$$() { return contentPane; }
+    public JComponent $$$getRootComponent$$$() {
+        return contentPane;
+    }
+
 }

@@ -73,11 +73,15 @@ public class EditDialog extends JDialog {
         getRootPane().setDefaultButton(buttonOK);
 
         buttonOK.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {onOK();}
+            public void actionPerformed(ActionEvent e) {
+                onOK();
+            }
         });
 
         buttonCancel.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {onCancel();}
+            public void actionPerformed(ActionEvent e) {
+                onCancel();
+            }
         });
 
         editModeBtn.addActionListener(new ActionListener() {
@@ -210,7 +214,7 @@ public class EditDialog extends JDialog {
                 fileLayer.saveLayer(layer);
                 photonFile.calculate(layerNo);
             } catch (Exception e) {
-                System.out.println(e.getMessage());
+                e.printStackTrace();
             }
             mainForm.changeLayer();
             mainForm.showMarginAndIslandInformation();
@@ -309,6 +313,8 @@ public class EditDialog extends JDialog {
     /**
      * @noinspection ALL
      */
-    public JComponent $$$getRootComponent$$$() { return contentPane; }
+    public JComponent $$$getRootComponent$$$() {
+        return contentPane;
+    }
 
 }

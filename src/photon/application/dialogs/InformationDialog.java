@@ -63,7 +63,9 @@ public class InformationDialog extends JDialog {
         setTitle("Information");
 
         buttonOK.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {onOK();}
+            public void actionPerformed(ActionEvent e) {
+                onOK();
+            }
         });
     }
 
@@ -278,9 +280,13 @@ public class InformationDialog extends JDialog {
     private Font $$$getFont$$$(String fontName, int style, int size, Font currentFont) {
         if (currentFont == null) return null;
         String resultName;
-        if (fontName == null) {resultName = currentFont.getName();} else {
+        if (fontName == null) {
+            resultName = currentFont.getName();
+        } else {
             Font testFont = new Font(fontName, Font.PLAIN, 10);
-            if (testFont.canDisplay('a') && testFont.canDisplay('1')) {resultName = fontName;} else {
+            if (testFont.canDisplay('a') && testFont.canDisplay('1')) {
+                resultName = fontName;
+            } else {
                 resultName = currentFont.getName();
             }
         }
@@ -290,6 +296,8 @@ public class InformationDialog extends JDialog {
     /**
      * @noinspection ALL
      */
-    public JComponent $$$getRootComponent$$$() { return contentPane; }
+    public JComponent $$$getRootComponent$$$() {
+        return contentPane;
+    }
 
 }

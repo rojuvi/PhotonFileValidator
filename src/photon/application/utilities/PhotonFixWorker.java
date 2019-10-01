@@ -71,6 +71,7 @@ public class PhotonFixWorker extends SwingWorker<Integer, String> implements IPh
             photonFile.fixLayers(this);
         } catch (Exception e) {
             publish("<br><p>" + e.getMessage()+ "</p>");
+            e.printStackTrace();
             return 0;
         }
         return 1;

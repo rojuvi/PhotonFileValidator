@@ -99,6 +99,7 @@ public class PhotonLoadWorker extends SwingWorker<Integer, String> implements IP
             mainForm.photonFile = null;
             mainForm.marginInfo.setForeground(Color.red);
             mainForm.marginInfo.setText("Could not read the file, file is corrupted or in an unsupported format.");
+            e.printStackTrace();
             return 0;
         }
         return 1;

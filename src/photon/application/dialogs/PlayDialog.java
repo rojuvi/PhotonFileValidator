@@ -50,11 +50,15 @@ public class PlayDialog extends JDialog {
         getRootPane().setDefaultButton(buttonOK);
 
         buttonOK.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {onOK();}
+            public void actionPerformed(ActionEvent e) {
+                onOK();
+            }
         });
 
         buttonCancel.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {onCancel();}
+            public void actionPerformed(ActionEvent e) {
+                onCancel();
+            }
         });
 
         // call onCancel() when cross is clicked
@@ -137,6 +141,8 @@ public class PlayDialog extends JDialog {
     /**
      * @noinspection ALL
      */
-    public JComponent $$$getRootComponent$$$() { return contentPane; }
+    public JComponent $$$getRootComponent$$$() {
+        return contentPane;
+    }
 
 }

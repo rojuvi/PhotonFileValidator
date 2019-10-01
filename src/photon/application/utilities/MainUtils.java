@@ -24,11 +24,9 @@
 
 package photon.application.utilities;
 
-import com.apple.eio.FileManager;
 import photon.application.MainForm;
 
 import javax.swing.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.File;
@@ -185,7 +183,7 @@ public class MainUtils {
                 System.out.println();
             }
         } catch (Exception e) {
-            System.out.println(e);
+            e.printStackTrace();
         }
     }
 

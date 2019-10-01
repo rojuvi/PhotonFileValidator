@@ -32,7 +32,6 @@ import photon.application.utilities.PhotonAaWorker;
 import photon.file.PhotonFile;
 import photon.file.parts.PhotonAaMatrix;
 import photon.file.ui.PhotonAALevel;
-import photon.file.ui.PhotonAaPanel;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -97,35 +96,51 @@ public class ConvertDialog extends JDialog {
         getRootPane().setDefaultButton(buttonOK);
 
         buttonOK.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {onOK();}
+            public void actionPerformed(ActionEvent e) {
+                onOK();
+            }
         });
 
         buttonCancel.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {onCancel();}
+            public void actionPerformed(ActionEvent e) {
+                onCancel();
+            }
         });
 
         gb3xBtn.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) { setMatrix(gb3); }
+            public void actionPerformed(ActionEvent e) {
+                setMatrix(gb3);
+            }
         });
 
         gb5xBtn.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) { setMatrix(gb5); }
+            public void actionPerformed(ActionEvent e) {
+                setMatrix(gb5);
+            }
         });
 
         b3xBtn.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) { setMatrix(b3); }
+            public void actionPerformed(ActionEvent e) {
+                setMatrix(b3);
+            }
         });
 
         b5xBtn.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) { setMatrix(b5); }
+            public void actionPerformed(ActionEvent e) {
+                setMatrix(b5);
+            }
         });
 
         s3xBtn.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) { setMatrix(s3); }
+            public void actionPerformed(ActionEvent e) {
+                setMatrix(s3);
+            }
         });
 
         s5xBtn.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) { setMatrix(s5); }
+            public void actionPerformed(ActionEvent e) {
+                setMatrix(s5);
+            }
         });
 
         aaLevel.addChangeListener(new ChangeListener() {
@@ -216,6 +231,7 @@ public class ConvertDialog extends JDialog {
                 return Integer.parseInt(str);
             } catch (Exception e) {
                 // ignore
+                e.printStackTrace();
             }
         }
         return 0;
@@ -417,6 +433,8 @@ public class ConvertDialog extends JDialog {
     /**
      * @noinspection ALL
      */
-    public JComponent $$$getRootComponent$$$() { return contentPane; }
+    public JComponent $$$getRootComponent$$$() {
+        return contentPane;
+    }
 
 }
