@@ -45,6 +45,7 @@ public class PhotonLayer {
     private int width;
     private int height;
     private int islandCount = 0;
+    private int islandSupportedCount = 0;
 
     private byte[][] iArray;
     private int[] pixels;
@@ -93,6 +94,7 @@ public class PhotonLayer {
     public void supportedByIsland(int x, int y) {
         iArray[y][x] = ISLAND_SUPPORT;
         rowIslandSupported[y]++;
+        islandSupportedCount++;
         pixels[y]++;
     }
 
@@ -111,6 +113,7 @@ public class PhotonLayer {
                 break;
             case ISLAND_SUPPORT:
                 rowIslandSupported[y]--;
+                islandSupportedCount--;
                 break;
             case CONNECTED:
                 rowUnsupported[y]--;
@@ -127,20 +130,35 @@ public class PhotonLayer {
     public void reduce() {
         // Double reduce to handle single line connections.
         for (int i = 0; i < 2; i++) {
+            if (islandSupportedCount > 0) {
+                for (int y = 0; y < height; y++) {
+                    if (rowIslandSupported[y] > 0) {
+                        for (int x = 0; x < width; x++) {
+                            if (iArray[y][x] == ISLAND_SUPPORT && connected(x, y)) {
+                                transformTo(x, y, CONNECTED);
+                                checkUp(x, y, ISLAND_SUPPORT, CONNECTED, rowIslandSupported);
+                                if (rowIslandSupported[y] == 0) {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             if (islandCount > 0) {
                 for (int y = 0; y < height; y++) {
                     if (rowIslands[y] > 0) {
                         for (int x = 0; x < width; x++) {
                             if (iArray[y][x] == ISLAND) {
                                 if (connected(x, y)) {
-                                    transformIslandTo(x, y, CONNECTED);
-                                    checkUp(x, y, CONNECTED);
+                                    transformTo(x, y, CONNECTED);
+                                    checkUp(x, y, ISLAND, CONNECTED, rowIslands);
                                     if (rowIslands[y] == 0) {
                                         break;
                                     }
                                 } else if (connectedToIslandSupported(x, y)) {
-                                    transformIslandTo(x, y, ISLAND_SUPPORT);
-                                    checkUp(x, y, ISLAND_SUPPORT);
+                                    transformTo(x, y, ISLAND_SUPPORT);
+                                    checkUp(x, y, ISLAND, ISLAND_SUPPORT, rowIslands);
                                     if (rowIslands[y] == 0) {
                                         break;
                                     }
@@ -153,44 +171,44 @@ public class PhotonLayer {
         }
     }
 
-    private void checkUp(int x, int y, byte type) {
-        if (y > 0 && rowIslands[y - 1] > 0 && iArray[y - 1][x] == ISLAND) {
-            transformIslandTo(x, y - 1, type);
-            checkUp(x, y - 1, type);
+    private void checkUp(int x, int y, byte expected, byte type, int[] rows) {
+        if (y > 0 && rows[y - 1] > 0 && iArray[y - 1][x] == expected) {
+            transformTo(x, y - 1, type);
+            checkUp(x, y - 1, expected, type, rows);
         }
-        if (x > 0 && rowIslands[y] > 0 && iArray[y][x - 1] == ISLAND) {
-            transformIslandTo(x - 1, y, type);
-            checkBackUp(x - 1, y, type);
+        if (x > 0 && rows[y] > 0 && iArray[y][x - 1] == expected) {
+            transformTo(x - 1, y, type);
+            checkBackUp(x - 1, y, expected, type, rows);
         }
-        if (x < (width-1) && rowIslands[y] > 0 && iArray[y][x + 1] == ISLAND) {
-            transformIslandTo(x + 1, y, type);
-            checkFrontUp(x + 1, y, type);
-        }
-    }
-
-    private void checkBackUp(int x, int y, byte type) {
-        if (y > 0 && rowIslands[y - 1] > 0 && iArray[y - 1][x] == ISLAND) {
-            transformIslandTo(x, y - 1, type);
-            checkBackUp(x, y - 1, type);
-        }
-        if (x > 0 && rowIslands[y] > 0 && iArray[y][x - 1] == ISLAND) {
-            transformIslandTo(x - 1, y, type);
-            checkBackUp(x - 1, y, type);
+        if (x < (width - 1) && rows[y] > 0 && iArray[y][x + 1] == expected) {
+            transformTo(x + 1, y, type);
+            checkFrontUp(x + 1, y, expected, type, rows);
         }
     }
 
-    private void checkFrontUp(int x, int y, byte type) {
-        if (y > 0 && rowIslands[y - 1] > 0 && iArray[y - 1][x] == ISLAND) {
-            transformIslandTo(x, y - 1, type);
-            checkFrontUp(x, y - 1, type);
+    private void checkBackUp(int x, int y, byte expected, byte type, int[] rows) {
+        if (y > 0 && rows[y - 1] > 0 && iArray[y - 1][x] == expected) {
+            transformTo(x, y - 1, type);
+            checkBackUp(x, y - 1, expected, type, rows);
         }
-        if (x < (width-1) && rowIslands[y] > 0 && iArray[y][x + 1] == ISLAND) {
-            transformIslandTo(x + 1, y, type);
-            checkFrontUp(x + 1, y, type);
+        if (x > 0 && rows[y] > 0 && iArray[y][x - 1] == expected) {
+            transformTo(x - 1, y, type);
+            checkBackUp(x - 1, y, expected, type, rows);
         }
     }
 
-    private void transformIslandTo(int x, int y, byte type) {
+    private void checkFrontUp(int x, int y, byte expected, byte type, int[] rows) {
+        if (y > 0 && rows[y - 1] > 0 && iArray[y - 1][x] == expected) {
+            transformTo(x, y - 1, type);
+            checkFrontUp(x, y - 1, expected, type, rows);
+        }
+        if (x < (width - 1) && rows[y] > 0 && iArray[y][x + 1] == expected) {
+            transformTo(x + 1, y, type);
+            checkFrontUp(x + 1, y, expected, type, rows);
+        }
+    }
+
+    private void transformTo(int x, int y, byte type) {
         switch (type) {
             case OFF:
                 // Nothing to do here
@@ -199,7 +217,6 @@ public class PhotonLayer {
                 rowSupported[y]++;
                 break;
             case ISLAND:
-                // You are turning an island into an island??
                 rowIslands[y]++;
                 islandCount++;
                 break;
@@ -208,14 +225,35 @@ public class PhotonLayer {
                 break;
             case ISLAND_SUPPORT:
                 rowIslandSupported[y]++;
+                islandSupportedCount++;
                 break;
             default:
                 throw new IllegalArgumentException("The transform type " + String.format("%02x", type) + " is not valid.");
         }
-
+        byte oldType = iArray[y][x];
+        switch (oldType) {
+            case OFF:
+                // Nothing to do here
+                break;
+            case SUPPORTED:
+                rowSupported[y]--;
+                break;
+            case ISLAND:
+                // You are turning an island into an island??
+                rowIslands[y]--;
+                islandCount--;
+                break;
+            case CONNECTED:
+                rowUnsupported[y]--;
+                break;
+            case ISLAND_SUPPORT:
+                rowIslandSupported[y]--;
+                islandSupportedCount--;
+                break;
+            default:
+                throw new IllegalArgumentException("The transform type " + String.format("%02x", type) + " is not valid.");
+        }
         iArray[y][x] = type;
-        rowIslands[y]--;
-        islandCount--;
     }
 
     private boolean connected(int x, int y) {

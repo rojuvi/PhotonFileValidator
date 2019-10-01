@@ -1,11 +1,12 @@
 package photon.file.parts;
 
+import java.util.Objects;
 import java.util.StringJoiner;
 
 /**
  * by donkikote on 2019-09-30.
  */
-public class PhotonMultiLayerIsland {
+public class PhotonMultiLayerIsland implements Comparable {
     private int start;
     private int end;
     private PhotonRect rect;
@@ -82,5 +83,30 @@ public class PhotonMultiLayerIsland {
                 .add("end=" + end)
                 .add("rect=" + rect)
                 .toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof PhotonMultiLayerIsland)) return false;
+        int compare = this.compareTo(o);
+        return compare == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getStart(), getEnd(), getRect());
+    }
+
+    @Override
+    public int compareTo(Object o) {
+        PhotonMultiLayerIsland other = (PhotonMultiLayerIsland) o;
+
+        int i = Integer.compare(start, other.getStart());
+        if (i != 0) return i;
+
+        i = Integer.compare(end, other.getEnd());
+        if (i != 0) return i;
+        int i1 = rect.compareTo(other.getRect());
+        return i1;
     }
 }

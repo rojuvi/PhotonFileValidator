@@ -26,6 +26,7 @@ package photon.file.ui;
 
 import photon.file.parts.PhotonFileLayer;
 import photon.file.parts.PhotonLine;
+import photon.file.parts.PhotonRect;
 import photon.file.parts.PhotonRow;
 
 import javax.swing.*;
@@ -174,4 +175,19 @@ public class PhotonLayerImage extends JPanel {
         }
     }
 
+    public void drawRect(PhotonRect rect, int margins) {
+        Graphics2D g = image.createGraphics();
+        g.scale(scale, scale);
+        g.setColor(Color.decode("#009999"));
+        int x1 = rect.getX1() - margins;
+        int y1 = rect.getY1() - margins;
+        int x2 = rect.getX2() + margins;
+        int y2 = rect.getY2() + margins;
+        g.drawLine(x1, y1, x1, y2);
+        g.drawLine(x1, y1, x2, y1);
+        g.drawLine(x1, y2, x2, y2);
+        g.drawLine(x2, y1, x2, y2);
+
+        g.dispose();
+    }
 }

@@ -271,7 +271,6 @@ public class PhotonFileLayer {
         }
 
         photonLayer.unLink();
-        System.gc();
 
         return layers;
     }
@@ -331,7 +330,6 @@ public class PhotonFileLayer {
             i++;
         }
         photonLayer.unLink();
-        System.gc();
 
     }
 
@@ -378,10 +376,9 @@ public class PhotonFileLayer {
         }
         photonLayer.unLink();
         previousLayer.unLink();
-        System.gc();
     }
 
-    public static void calculateLayers(PhotonFileHeader photonFileHeader, List<PhotonFileLayer> layers, int margin, int layerNo) throws Exception {
+    public static void calculateLayers(PhotonFileHeader photonFileHeader, List<PhotonFileLayer> layers, int margin, int layerNo, int iterations) throws Exception {
         PhotonLayer photonLayer = new PhotonLayer(photonFileHeader.getResolutionX(), photonFileHeader.getResolutionY());
         PhotonLayer oldLayer = new PhotonLayer(photonFileHeader.getResolutionX(), photonFileHeader.getResolutionY());
         PhotonLayer previousLayer = new PhotonLayer(photonFileHeader.getResolutionX(), photonFileHeader.getResolutionY());
@@ -394,7 +391,7 @@ public class PhotonFileLayer {
             previousLayer.unpackLayerImage(previousFileLayer.packedLayerImage);
         }
         boolean layerChanged = false;
-        for (int i = 0; i < 2 || layerChanged; i++) {
+        for (int i = 0; (iterations == -1 || i < iterations) && (i < 2 || layerChanged); i++) {
             PhotonFileLayer layer = layers.get(layerNo + i);
             ArrayList<BitSet> unpackedImage = layer.unpackImage(photonFileHeader.getResolutionX());
 
@@ -421,7 +418,6 @@ public class PhotonFileLayer {
         }
         photonLayer.unLink();
         previousLayer.unLink();
-        System.gc();
     }
 
     public ArrayList<PhotonRow> getRows() {
@@ -576,13 +572,16 @@ public class PhotonFileLayer {
     private void addCollidingRects(BitSet cols, int x, Set<PhotonRect> islandsRects) {
         List<PhotonRect> rowRects = findRects(cols, x);
         for (PhotonRect rowRect : rowRects) {
+            boolean merge = false;
             for (PhotonRect prevLayerRect : islandsRects) {
                 if (prevLayerRect.inContactWith(rowRect)) {
                     prevLayerRect.merge(rowRect);
-                    rowRect = prevLayerRect;
+                    merge = true;
                 }
             }
-            islandsRects.add(rowRect);
+            if (!merge) {
+                islandsRects.add(rowRect);
+            }
         }
     }
 

@@ -307,7 +307,12 @@ public class PhotonFile {
     private void reduce(SortedSet<PhotonMultiLayerIsland> multiLayerIslands) {
         AtomicBoolean reducing = new AtomicBoolean(true);
         Set<PhotonMultiLayerIsland> toRemove = new HashSet<>();
+        int count = 0;
+        SortedSet<PhotonMultiLayerIsland> tmp = new TreeSet<>();
         while (reducing.get()) {
+            System.out.println("Reducing: " + count);
+            System.out.println("Islands: " + multiLayerIslands.size());
+            tmp.clear();
             reducing.set(false);
             toRemove.clear();
             multiLayerIslands.forEach(mli -> {
@@ -318,15 +323,26 @@ public class PhotonFile {
                         mli.merge(photonMultiLayerIsland);
                         toRemove.add(photonMultiLayerIsland);
                     }
+                    if (mli.getEnd() < photonMultiLayerIsland.getStart()) {
+                        break;
+                    }
                 }
+                tmp.add(mli);
             });
-            multiLayerIslands.removeAll(toRemove);
+            System.out.println("To remove: " + toRemove.size());
+            tmp.removeAll(toRemove);
+            multiLayerIslands.clear();
+            multiLayerIslands.addAll(tmp);
+            count++;
         }
+//        multiLayerIslands.forEach(i -> tmp.add(i));
+//        multiLayerIslands.clear();
+//        multiLayerIslands.addAll(tmp);
+        System.out.println("Done reducing");
     }
 
     private Set<PhotonMultiLayerIsland> findLayerIslands(int layerNo, PhotonFileLayer layer,
                                                          Collection<PhotonMultiLayerIsland> prevLayerIslands) {
-        // TODO fix this shit getting too much islands repeated
         Collection<PhotonRect> layerIslands = layer.getIslandsRects();
         Set<PhotonMultiLayerIsland> layerMultiLayerIslands = new HashSet<>();
         boolean collisions;
@@ -337,6 +353,7 @@ public class PhotonFile {
                         || layerIsland.inContactWith(prevLayerIsland.getRect())) {
                     collisions = true;
                     // Use prevLayerIsland as this layer island
+                    layerMultiLayerIslands.add(prevLayerIsland);
                     prevLayerIsland.getRect().merge(layerIsland);
                     prevLayerIsland.setEnd(layerNo);
                     layerMultiLayerIslands.add(prevLayerIsland);
@@ -411,7 +428,6 @@ public class PhotonFile {
         previewOne = null;
         previewTwo.unLink();
         previewTwo = null;
-        System.gc();
     }
 
 
@@ -429,7 +445,13 @@ public class PhotonFile {
 
     public void fixLayers(IPhotonProgress progres) throws Exception {
         PhotonLayer layer = null;
+        int i = 0;
+        System.out.println("Start fixing layers");
         for (int layerNo : islandLayers) {
+            int untilNextLayer = -1;
+            if (i+1 < islandLayers.size()) {
+                untilNextLayer = islandLayers.get(i+1) - layerNo;
+            }
             progres.showInfo("Checking layer " + layerNo);
 
             // Unpack the layer data to the layer utility class
@@ -439,19 +461,20 @@ public class PhotonFile {
             } else {
                 fileLayer.getUpdateLayer(layer);
             }
-
             int changed = fixit(progres, layer, fileLayer, 10);
             if (changed == 0) {
                 progres.showInfo(", but nothing could be done.");
             } else {
                 fileLayer.saveLayer(layer);
-                calculate(layerNo);
+                calculate(layerNo, untilNextLayer);
             }
 
             progres.showInfo("<br>");
-
+            i++;
         }
+        System.out.println("Done fixing, find islands");
         findIslands();
+        System.out.println("Done finding islands");
     }
 
     private int fixit(IPhotonProgress progres, PhotonLayer layer, PhotonFileLayer fileLayer, int loops) throws Exception {
@@ -476,8 +499,8 @@ public class PhotonFile {
         resetMarginAndIslandInfo();
     }
 
-    public void calculate(int layerNo) throws Exception {
-        PhotonFileLayer.calculateLayers(photonFileHeader, layers, margin, layerNo);
+    public void calculate(int layerNo, int limit) throws Exception {
+        PhotonFileLayer.calculateLayers(photonFileHeader, layers, margin, layerNo, limit);
         resetMarginAndIslandInfo();
     }
 
@@ -485,9 +508,7 @@ public class PhotonFile {
         islandList = null;
         islandLayerCount = 0;
         islandLayers = new ArrayList<>();
-        multiLayerIslands = new TreeSet<>(Comparator.comparing(PhotonMultiLayerIsland::getStart)
-                .thenComparing(PhotonMultiLayerIsland::getEnd)
-                .thenComparing(PhotonMultiLayerIsland::hashCode));
+        multiLayerIslands = new TreeSet<>();
 
         if (margin > 0) {
             marginLayers = new ArrayList<>();

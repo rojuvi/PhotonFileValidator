@@ -14,7 +14,7 @@ import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
-import java.util.SortedSet;
+import java.util.Set;
 
 public class RemoveIslandsDialog extends JDialog {
     private JPanel contentPane;
@@ -32,8 +32,9 @@ public class RemoveIslandsDialog extends JDialog {
     private JLabel currentSelected = null;
 
     private PhotonFile photonFile;
-    private SortedSet<PhotonMultiLayerIsland> multiLayerIslands;
+    private Set<PhotonMultiLayerIsland> multiLayerIslands;
     private ArrayList<JCheckBox> islandCheckboxes = new ArrayList<>();
+    PhotonMultiLayerIsland selectedIsland = null;
 
     public RemoveIslandsDialog(final MainForm mainForm) {
         super(mainForm.frame);
@@ -73,9 +74,11 @@ public class RemoveIslandsDialog extends JDialog {
                 layerCount.setText(Integer.toString(layerSlider.getValue()));
                 layerCount.repaint();
                 image.drawLayer(photonFile.getLayer(layerSlider.getValue()), photonFile.getMargin());
+                image.drawRect(selectedIsland.getRect(), 5);
                 image.repaint();
             }
         });
+        contentPane.setSize(new Dimension(1280, 1000));
     }
 
     private void onOK() {
@@ -110,7 +113,7 @@ public class RemoveIslandsDialog extends JDialog {
                 @Override
                 public void mousePressed(MouseEvent e) {
                     image.drawLayer(photonFile.getLayer(multiLayerIsland.getStart()), photonFile.getMargin());
-                    image.repaint();
+                    selectedIsland = multiLayerIsland;
                     int posX = multiLayerIsland.getRect().getX1() + (multiLayerIsland.getRect().getX2() - multiLayerIsland.getRect().getX1()) / 2 - (imageScroll.getWidth() / 2);
                     if (posX < 0) {
                         posX = 0;
@@ -133,10 +136,13 @@ public class RemoveIslandsDialog extends JDialog {
                     currentSelected = jLabel;
 
                     layerSlider.setEnabled(true);
-                    layerSlider.setMaximum(multiLayerIsland.getEnd() + 10);
+                    layerSlider.setMaximum(multiLayerIsland.getEnd() + 5);
                     layerSlider.setMinimum(multiLayerIsland.getStart());
                     layerSlider.setValue(multiLayerIsland.getStart());
                     layerSlider.repaint();
+
+                    image.drawRect(multiLayerIsland.getRect(), 5);
+                    image.repaint();
                 }
 
                 @Override
@@ -163,6 +169,7 @@ public class RemoveIslandsDialog extends JDialog {
         islandList.add(new Spacer(), new GridConstraints(i, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
         final JScrollPane scrollPane1 = new JScrollPane();
     }
+    // TODO make island supported stop when it connects to something supported
     // TODO implement preview of island when clicked
     // TODO implement select islands to remove
     // TODO implement remove islands

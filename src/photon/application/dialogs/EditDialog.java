@@ -212,7 +212,7 @@ public class EditDialog extends JDialog {
             }
             try {
                 fileLayer.saveLayer(layer);
-                photonFile.calculate(layerNo);
+                photonFile.calculate(layerNo, -1);
             } catch (Exception e) {
                 e.printStackTrace();
             }

@@ -35,9 +35,12 @@ import javax.swing.*;
  * by bn on 14/07/2018.
  */
 public class PhotonFixWorker extends SwingWorker<Integer, String> implements IPhotonProgress {
+    private static final int PROGRESS_BATCH_SIZE = 10;
     private FixDialog fixDialog;
     private PhotonFile photonFile;
     private MainForm mainForm;
+    private int progressCounter = 0;
+    private StringBuilder stringBuilder = new StringBuilder();
 
     public PhotonFixWorker(FixDialog fixDialog, PhotonFile photonFile, MainForm mainForm) {
         this.fixDialog = fixDialog;
@@ -47,13 +50,20 @@ public class PhotonFixWorker extends SwingWorker<Integer, String> implements IPh
 
     @Override
     protected void process(java.util.List<String> chunks) {
-        for (String str : chunks) {
-            fixDialog.appendInformation(str);
+        if (progressCounter % PROGRESS_BATCH_SIZE == 0) {
+            fixDialog.appendInformation(stringBuilder.toString());
+            stringBuilder = new StringBuilder();
+        } else {
+            for (String chunk : chunks) {
+                stringBuilder.append(chunk);
+            }
         }
+        progressCounter++;
     }
 
     @Override
     protected void done() {
+        System.out.println("Fixing done");
         fixDialog.buttonOK.setEnabled(true);
         fixDialog.startButton.setEnabled(true);
         fixDialog.appendInformation("<p>Done.</p>");
@@ -67,8 +77,10 @@ public class PhotonFixWorker extends SwingWorker<Integer, String> implements IPh
 
     @Override
     protected Integer doInBackground() throws Exception {
+        progressCounter = 0;
         try {
             photonFile.fixLayers(this);
+            System.out.println("Fixing done");
         } catch (Exception e) {
             publish("<br><p>" + e.getMessage()+ "</p>");
             e.printStackTrace();

@@ -1,11 +1,12 @@
 package photon.file.parts;
 
+import java.util.Objects;
 import java.util.StringJoiner;
 
 /**
  * by donkikote on 2019-09-30.
  */
-public class PhotonRect {
+public class PhotonRect implements Comparable {
 
     private int x1;
     private int y1;
@@ -77,5 +78,28 @@ public class PhotonRect {
                 .add("x2=" + x2)
                 .add("y2=" + y2)
                 .toString();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getX1(), getY1(), getX2(), getY2());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof PhotonRect)) return false;
+        return this.compareTo(o) == 0;
+    }
+
+    @Override
+    public int compareTo(Object o) {
+        PhotonRect other = (PhotonRect) o;
+        int i = Integer.compare(x1, other.getX1());
+        if (i != 0) return i;
+        i = Integer.compare(y1, other.getY1());
+        if (i != 0) return i;
+        i = Integer.compare(x2, other.getX2());
+        if (i != 0) return i;
+        return Integer.compare(y2, other.getY2());
     }
 }
