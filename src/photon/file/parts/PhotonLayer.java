@@ -208,7 +208,7 @@ public class PhotonLayer {
         }
     }
 
-    private void transformTo(int x, int y, byte type) {
+    public void transformTo(int x, int y, byte type) {
         switch (type) {
             case OFF:
                 // Nothing to do here

@@ -24,6 +24,8 @@
 
 package photon.file.parts;
 
+import photon.file.PhotonFile;
+
 import java.io.ByteArrayInputStream;
 import java.util.*;
 
@@ -333,11 +335,17 @@ public class PhotonFileLayer {
 
     }
 
-    public static void calculateLayers(PhotonFileHeader photonFileHeader, List<PhotonFileLayer> layers, int margin, IPhotonProgress iPhotonProgress) throws Exception {
+    public static void calculateLayers(PhotonFile photonFile, IPhotonProgress iPhotonProgress) throws Exception {
+        PhotonFileHeader photonFileHeader = photonFile.getPhotonFileHeader();
+        List<PhotonFileLayer> layers = photonFile.getLayers();
+        int margin = photonFile.getMargin();
         ArrayList<BitSet> previousUnpackedImage = null;
         PhotonLayer photonLayer = new PhotonLayer(photonFileHeader.getResolutionX(), photonFileHeader.getResolutionY());
         PhotonLayer previousLayer = new PhotonLayer(photonFileHeader.getResolutionX(), photonFileHeader.getResolutionY());
+        SortedSet<PhotonMultiLayerIsland> prevLayerIslands = new TreeSet<>();
         PhotonLayer tmp;
+
+        photonFile.restartIslandInfo();
         int i = 0;
         for (PhotonFileLayer layer : layers) {
             ArrayList<BitSet> unpackedImage = layer.unpackImage(photonFileHeader.getResolutionX());
@@ -369,6 +377,7 @@ public class PhotonFileLayer {
                     aaFileLayer.isCalculated = false;
                 }
             }
+            photonFile.findIslands(i, layer);
             tmp = previousLayer;
             previousLayer = photonLayer;
             photonLayer = tmp;
@@ -376,15 +385,21 @@ public class PhotonFileLayer {
         }
         photonLayer.unLink();
         previousLayer.unLink();
+        photonFile.reduceMultiLayerIslands();
     }
 
-    public static void calculateLayers(PhotonFileHeader photonFileHeader, List<PhotonFileLayer> layers, int margin, int layerNo, int iterations) throws Exception {
+    public static void calculateLayers(PhotonFile photonFile, int layerNo, int iterations) throws Exception {
+        PhotonFileHeader photonFileHeader = photonFile.getPhotonFileHeader();
+        List<PhotonFileLayer> layers = photonFile.getLayers();
+        int margin = photonFile.getMargin();
         PhotonLayer photonLayer = new PhotonLayer(photonFileHeader.getResolutionX(), photonFileHeader.getResolutionY());
         PhotonLayer oldLayer = new PhotonLayer(photonFileHeader.getResolutionX(), photonFileHeader.getResolutionY());
         PhotonLayer previousLayer = new PhotonLayer(photonFileHeader.getResolutionX(), photonFileHeader.getResolutionY());
+        SortedSet<PhotonMultiLayerIsland> prevLayerIslands = photonFile.getMultiLayerIslands();
         PhotonLayer tmp;
         ArrayList<BitSet> previousUnpackedImage = null;
 
+//        photonFile.restartIslandInfo();
         if (layerNo > 0) {
             PhotonFileLayer previousFileLayer = layers.get(layerNo - 1);
             previousUnpackedImage = previousFileLayer.unpackImage(photonFileHeader.getResolutionX());
@@ -412,12 +427,14 @@ public class PhotonFileLayer {
             layer.packedLayerImage = photonLayer.packLayerImage();
             layer.isCalculated = true;
 
+            photonFile.findIslands(layerNo + i, layer);
             tmp = previousLayer;
             previousLayer = photonLayer;
             photonLayer = tmp;
         }
         photonLayer.unLink();
         previousLayer.unLink();
+        photonFile.reduceMultiLayerIslands();
     }
 
     public ArrayList<PhotonRow> getRows() {
@@ -516,6 +533,10 @@ public class PhotonFileLayer {
         return photonLayer;
     }
 
+    public byte[] getPackedLayerImage() {
+        return packedLayerImage;
+    }
+
     public void getUpdateLayer(PhotonLayer photonLayer) {
         photonLayer.unpackLayerImage(packedLayerImage);
     }
@@ -552,8 +573,8 @@ public class PhotonFileLayer {
         return antiAliasLayers;
     }
 
-    public Set<PhotonRect> getIslandsRects() {
-        Set<PhotonRect> islandsRects = new HashSet<>();
+    public SortedSet<PhotonRect> getIslandsRects() {
+        SortedSet<PhotonRect> islandsRects = new TreeSet<>();
         PhotonLayer layer = new PhotonLayer(photonFileHeader.getResolutionX(), photonFileHeader.getResolutionY());
         layer.unpackLayerImage(this.packedLayerImage);
         int[] rowIslands = layer.getRowIslands();
@@ -603,4 +624,26 @@ public class PhotonFileLayer {
         }
         return rects;
     }
+
+    public void removeIslands(Set<PhotonMultiLayerIsland> islandsToRemove) throws Exception {
+        PhotonLayer photonLayer = new PhotonLayer(photonFileHeader.getResolutionX(), photonFileHeader.getResolutionY());
+        getUpdateLayer(photonLayer);
+        for (PhotonMultiLayerIsland island : islandsToRemove) {
+            removeIslands(photonLayer, island.getRect());
+        }
+    }
+
+    private void removeIslands(PhotonLayer photonLayer, PhotonRect rect) throws Exception {
+        for (int x = rect.getX1(); x <= rect.getX2(); x++) {
+            if (photonLayer.getRowIslands()[x] > 0 || photonLayer.getRowIslandSupported()[x] > 0) {
+                for (int y = rect.getY1(); y <= rect.getY2(); y++) {
+                    if (photonLayer.getiArray()[x][y] == PhotonLayer.ISLAND
+                            || photonLayer.getiArray()[x][y] == PhotonLayer.ISLAND_SUPPORT)
+                        photonLayer.transformTo(y, x, PhotonLayer.OFF);
+                }
+            }
+        }
+        this.saveLayer(photonLayer);
+    }
+
 }

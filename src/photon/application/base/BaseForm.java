@@ -157,7 +157,7 @@ public class BaseForm {
             me.removeIslandsDialog = new RemoveIslandsDialog(me);
         }
         me.removeIslandsDialog.setInformation(photonFile);
-        me.removeIslandsDialog.setSize(new Dimension(650, 430));
+        me.removeIslandsDialog.setSize(new Dimension(1400, 800));
         me.removeIslandsDialog.setLocationRelativeTo(me.frame);
         me.removeIslandsDialog.setVisible(true);
 

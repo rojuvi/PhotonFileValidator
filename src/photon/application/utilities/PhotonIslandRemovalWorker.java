@@ -25,51 +25,50 @@
 package photon.application.utilities;
 
 import photon.application.MainForm;
-import photon.application.dialogs.FixDialog;
+import photon.application.dialogs.RemoveIslandsDialog;
 import photon.file.PhotonFile;
 import photon.file.parts.IPhotonProgress;
+import photon.file.parts.PhotonMultiLayerIsland;
 
 import javax.swing.*;
-import java.util.Collections;
+import java.util.SortedSet;
 
 /**
  * by bn on 14/07/2018.
  */
-public class PhotonFixWorker extends SwingWorker<Integer, String> implements IPhotonProgress {
-    private static final int PROGRESS_BATCH_SIZE = 10;
-    private FixDialog fixDialog;
-    private PhotonFile photonFile;
+public class PhotonIslandRemovalWorker extends SwingWorker<Integer, String> implements IPhotonProgress {
     private MainForm mainForm;
-    private int progressCounter = 0;
-    private StringBuilder stringBuilder = new StringBuilder();
+    private RemoveIslandsDialog removeIslandsDialog;
+    private PhotonFile photonFile;
+    private SortedSet<PhotonMultiLayerIsland> islandsToRemove;
 
-    public PhotonFixWorker(FixDialog fixDialog, PhotonFile photonFile, MainForm mainForm) {
-        this.fixDialog = fixDialog;
-        this.photonFile = photonFile;
+    public PhotonIslandRemovalWorker(MainForm mainForm, RemoveIslandsDialog removeIslandsDialog, PhotonFile photonFile) {
         this.mainForm = mainForm;
+        this.removeIslandsDialog = removeIslandsDialog;
+        this.photonFile = photonFile;
+        islandsToRemove = null;
+    }
+
+    public PhotonIslandRemovalWorker(MainForm mainForm, RemoveIslandsDialog removeIslandsDialog, PhotonFile photonFile, SortedSet<PhotonMultiLayerIsland> islandsToRemove) {
+        this.mainForm = mainForm;
+        this.removeIslandsDialog = removeIslandsDialog;
+        this.photonFile = photonFile;
+        this.islandsToRemove = islandsToRemove;
     }
 
     @Override
     protected void process(java.util.List<String> chunks) {
-        if (progressCounter % PROGRESS_BATCH_SIZE == 0) {
-            fixDialog.appendInformation(stringBuilder.toString());
-            stringBuilder = new StringBuilder();
-        } else {
-            for (String chunk : chunks) {
-                stringBuilder.append(chunk);
-            }
+        if (!chunks.isEmpty()) {
+            removeIslandsDialog.setProgress(Integer.valueOf(chunks.get(chunks.size() - 1)));
         }
-        progressCounter++;
     }
 
     @Override
     protected void done() {
-        progressCounter = 0;
-        process(Collections.emptyList());
-        fixDialog.buttonOK.setEnabled(true);
-        fixDialog.startButton.setEnabled(true);
-        fixDialog.appendInformation("<p>Done.</p>");
-        mainForm.showFileInformation();
+        removeIslandsDialog.setInformation(photonFile);
+        removeIslandsDialog.activate();
+        mainForm.showMarginAndIslandInformation();
+        mainForm.changeLayer();
     }
 
     @Override
@@ -78,12 +77,19 @@ public class PhotonFixWorker extends SwingWorker<Integer, String> implements IPh
     }
 
     @Override
-    protected Integer doInBackground() throws Exception {
-        progressCounter = 0;
+    protected Integer doInBackground() {
+        removeIslandsDialog.lockdown();
+        if (islandsToRemove == null) {
+            islandsToRemove = photonFile.getMultiLayerIslands();
+        }
+        int start = islandsToRemove.first().getStart();
+        int end = islandsToRemove.last().getEnd();
+        removeIslandsDialog.setMinProgress(start - 1);
+        removeIslandsDialog.setMaxProgress(end);
+        removeIslandsDialog.setProgress(start - 1);
         try {
-            photonFile.fixLayers(this);
+            mainForm.photonFile.removeIslands(islandsToRemove, this);
         } catch (Exception e) {
-            publish("<br><p>" + e.getMessage()+ "</p>");
             e.printStackTrace();
             return 0;
         }

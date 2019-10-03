@@ -106,7 +106,6 @@ public class PhotonMultiLayerIsland implements Comparable {
 
         i = Integer.compare(end, other.getEnd());
         if (i != 0) return i;
-        int i1 = rect.compareTo(other.getRect());
-        return i1;
+        return rect.compareTo(other.getRect());
     }
 }

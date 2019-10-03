@@ -29,6 +29,7 @@ import photon.file.parts.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 /**
  * by bn on 30/06/2018.
@@ -260,6 +261,15 @@ public class PhotonFile {
         if (islandList == null) {
             findIslands();
         }
+        islandList = new StringBuilder();
+        for (int i = 0; i < islandLayers.size() && i < 11; i++) {
+            if (i == 10) {
+                islandList.append(", ...");
+            } else {
+                if (islandList.length() > 0) islandList.append(", ");
+                islandList.append(islandLayers.get(i));
+            }
+        }
         if (islandLayerCount == 0) {
             return "Whoopee, all is good, no unsupported areas";
         } else if (islandLayerCount == 1) {
@@ -272,56 +282,57 @@ public class PhotonFile {
         if (islandLayers != null) {
             islandLayers.clear();
             multiLayerIslands.clear();
-            islandList = new StringBuilder();
             islandLayerCount = 0;
-            Set<PhotonMultiLayerIsland> prevLayerIslands = new HashSet<>();
+            SortedSet<PhotonMultiLayerIsland> prevLayerIslands = new TreeSet<>();
             if (layers != null) {
                 for (int layerNo = 0; layerNo < photonFileHeader.getNumberOfLayers(); layerNo++) {
-                    PhotonFileLayer layer = layers.get(layerNo);
-                    Set<PhotonMultiLayerIsland> layerIslands;
-                    if (layer.getIsLandsCount() > 0) {
-                        if (islandLayerCount < 11) {
-                            if (islandLayerCount == 10) {
-                                islandList.append(", ...");
-                            } else {
-                                if (islandList.length() > 0) islandList.append(", ");
-                                islandList.append(layerNo);
-                            }
-                        }
-                        islandLayerCount++;
-                        islandLayers.add(layerNo);
-                    }
-                    if (layer.getIsLandsCount() > 0 || layer.getIslandSupportedCount() > 0) {
-                        layerIslands = findLayerIslands(layerNo, layer, prevLayerIslands);
-                        multiLayerIslands.addAll(layerIslands);
-                        prevLayerIslands = layerIslands;
-                    } else {
-                        prevLayerIslands.clear();
-                    }
+                    findIslands(layerNo, layers.get(layerNo));
                 }
                 reduce(multiLayerIslands);
             }
         }
     }
 
+    public void findIslands(int layerNo, PhotonFileLayer layer) {
+        if (layer.getIsLandsCount() > 0) {
+            if (!islandLayers.contains(layerNo)) {
+                islandLayerCount++;
+                islandLayers.add(layerNo);
+            }
+        } else {
+            if (islandLayers.contains(layerNo)) {
+                islandLayerCount--;
+                islandLayers.remove(Integer.valueOf(layerNo));
+            }
+        }
+        findLayerIslands(layerNo, layer);
+    }
+
+    public void reduceMultiLayerIslands() {
+        reduce(multiLayerIslands);
+    }
+
     private void reduce(SortedSet<PhotonMultiLayerIsland> multiLayerIslands) {
         AtomicBoolean reducing = new AtomicBoolean(true);
         Set<PhotonMultiLayerIsland> toRemove = new HashSet<>();
         int count = 0;
-        SortedSet<PhotonMultiLayerIsland> tmp = new TreeSet<>();
+        SortedSet<PhotonMultiLayerIsland> tmp = new TreeSet<>(multiLayerIslands);
+        multiLayerIslands.clear();
+        multiLayerIslands.addAll(tmp);
         while (reducing.get()) {
-            System.out.println("Reducing: " + count);
-            System.out.println("Islands: " + multiLayerIslands.size());
             tmp.clear();
             reducing.set(false);
             toRemove.clear();
             multiLayerIslands.forEach(mli -> {
                 SortedSet<PhotonMultiLayerIsland> layerIslandsAhead = multiLayerIslands.tailSet(mli);
                 for (PhotonMultiLayerIsland photonMultiLayerIsland : layerIslandsAhead) {
-                    if (mli != photonMultiLayerIsland && (mli.collidesWith(photonMultiLayerIsland) || mli.inContactWith(photonMultiLayerIsland))) {
+                    if (!mli.equals(photonMultiLayerIsland) && (mli.collidesWith(photonMultiLayerIsland) || mli.inContactWith(photonMultiLayerIsland))) {
                         reducing.set(true);
+                        toRemove.remove(mli);
                         mli.merge(photonMultiLayerIsland);
-                        toRemove.add(photonMultiLayerIsland);
+                        if (!mli.equals(photonMultiLayerIsland)) {
+                            toRemove.add(photonMultiLayerIsland);
+                        }
                     }
                     if (mli.getEnd() < photonMultiLayerIsland.getStart()) {
                         break;
@@ -329,42 +340,86 @@ public class PhotonFile {
                 }
                 tmp.add(mli);
             });
-            System.out.println("To remove: " + toRemove.size());
             tmp.removeAll(toRemove);
             multiLayerIslands.clear();
             multiLayerIslands.addAll(tmp);
             count++;
         }
-//        multiLayerIslands.forEach(i -> tmp.add(i));
-//        multiLayerIslands.clear();
-//        multiLayerIslands.addAll(tmp);
-        System.out.println("Done reducing");
     }
 
-    private Set<PhotonMultiLayerIsland> findLayerIslands(int layerNo, PhotonFileLayer layer,
-                                                         Collection<PhotonMultiLayerIsland> prevLayerIslands) {
-        Collection<PhotonRect> layerIslands = layer.getIslandsRects();
-        Set<PhotonMultiLayerIsland> layerMultiLayerIslands = new HashSet<>();
-        boolean collisions;
-        for (PhotonRect layerIsland : layerIslands) {
-            collisions = false;
-            for (PhotonMultiLayerIsland prevLayerIsland : prevLayerIslands) {
-                if (layerIsland.collidesWith(prevLayerIsland.getRect())
-                        || layerIsland.inContactWith(prevLayerIsland.getRect())) {
-                    collisions = true;
-                    // Use prevLayerIsland as this layer island
-                    layerMultiLayerIslands.add(prevLayerIsland);
-                    prevLayerIsland.getRect().merge(layerIsland);
-                    prevLayerIsland.setEnd(layerNo);
-                    layerMultiLayerIslands.add(prevLayerIsland);
+    private void findLayerIslands(int layerNo, PhotonFileLayer layer) {
+        if (layer.getPackedLayerImage() != null) {
+            SortedSet<PhotonRect> layerIslands = layer.getIslandsRects();
+            SortedSet<PhotonMultiLayerIsland> layerMultiLayerIslands = new TreeSet<>();
+            boolean collisions;
+            Set<PhotonMultiLayerIsland> possibleMergeableIslands = multiLayerIslands.stream()
+                    .filter(island -> layerNo >= island.getStart() - 1 && layerNo <= island.getEnd() + 1)
+                    .collect(Collectors.toSet());
+            for (PhotonRect layerIsland : layerIslands) {
+                collisions = false;
+                for (PhotonMultiLayerIsland prevLayerIsland : possibleMergeableIslands) {
+                    if (layerIsland.collidesWith(prevLayerIsland.getRect())
+                            || layerIsland.inContactWith(prevLayerIsland.getRect())) {
+                        collisions = true;
+                        // Use prevLayerIsland as this layer island
+                        layerMultiLayerIslands.add(prevLayerIsland);
+                        prevLayerIsland.getRect().merge(layerIsland);
+                        prevLayerIsland.setEnd(Math.max(layerNo, prevLayerIsland.getEnd()));
+                        prevLayerIsland.setStart(Math.min(layerNo, prevLayerIsland.getStart()));
+                        layerMultiLayerIslands.add(prevLayerIsland);
+                    }
+                }
+                if (!collisions) {
+                    layerMultiLayerIslands.add(new PhotonMultiLayerIsland(layerNo, layerIsland));
                 }
             }
-            if (!collisions) {
-                layerMultiLayerIslands.add(new PhotonMultiLayerIsland(layerNo, layerIsland));
+
+            SortedSet<PhotonMultiLayerIsland> toUpdate = new TreeSet<>();
+            for (PhotonMultiLayerIsland prevLayerIsland : possibleMergeableIslands) {
+                boolean keepLayer = false;
+                for (PhotonMultiLayerIsland layerMultiLayerIsland : layerMultiLayerIslands) {
+                    if (prevLayerIsland.getEnd() == layerNo - 1
+                            || prevLayerIsland.getStart() == layerNo + 1
+                            || prevLayerIsland.collidesWith(layerMultiLayerIsland)) {
+                        keepLayer = true;
+                    }
+                }
+                if (!keepLayer) {
+                    toUpdate.add(prevLayerIsland);
+                }
             }
+            removeLayerIsland(toUpdate, layerNo);
+
+            multiLayerIslands.addAll(layerMultiLayerIslands);
         }
-        return layerMultiLayerIslands;
     }
+
+    private void removeLayerIsland(SortedSet<PhotonMultiLayerIsland> toUpdate, int layerNo) {
+        for (PhotonMultiLayerIsland photonMultiLayerIsland : toUpdate) {
+            removeLayerIsland(photonMultiLayerIsland, layerNo);
+        }
+    }
+
+    private void removeLayerIsland(PhotonMultiLayerIsland toUpdate, int layerNo) {
+        if (toUpdate.getStart() == layerNo && toUpdate.getEnd() == layerNo) {
+            multiLayerIslands.remove(toUpdate);
+        } else if (toUpdate.getStart() == layerNo) {
+            toUpdate.setStart(layerNo + 1);
+        } else if (toUpdate.getEnd() == layerNo) {
+            toUpdate.setEnd(layerNo - 1);
+        } else if (toUpdate.getStart() < layerNo && toUpdate.getEnd() > layerNo) {
+            splitIsland(toUpdate, layerNo);
+        }
+    }
+
+    private void splitIsland(PhotonMultiLayerIsland toUpdate, int layerNo) {
+        PhotonMultiLayerIsland island1 = new PhotonMultiLayerIsland(toUpdate.getStart(), layerNo - 1, toUpdate.getRect());
+        PhotonMultiLayerIsland island2 = new PhotonMultiLayerIsland(layerNo + 1, toUpdate.getEnd(), toUpdate.getRect());
+        multiLayerIslands.remove(toUpdate);
+        multiLayerIslands.add(island1);
+        multiLayerIslands.add(island2);
+    }
+
 
     public int getWidth() {
         return photonFileHeader.getResolutionY();
@@ -383,6 +438,10 @@ public class PhotonFile {
             return layers.get(i);
         }
         return null;
+    }
+
+    public List<PhotonFileLayer> getLayers() {
+        return layers;
     }
 
     public long getPixels() {
@@ -446,7 +505,7 @@ public class PhotonFile {
     public void fixLayers(IPhotonProgress progres) throws Exception {
         PhotonLayer layer = null;
         int i = 0;
-        System.out.println("Start fixing layers");
+        ArrayList<Integer> islandLayers = new ArrayList<>(this.islandLayers);
         for (int layerNo : islandLayers) {
             int untilNextLayer = -1;
             if (i+1 < islandLayers.size()) {
@@ -472,9 +531,7 @@ public class PhotonFile {
             progres.showInfo("<br>");
             i++;
         }
-        System.out.println("Done fixing, find islands");
         findIslands();
-        System.out.println("Done finding islands");
     }
 
     private int fixit(IPhotonProgress progres, PhotonLayer layer, PhotonFileLayer fileLayer, int loops) throws Exception {
@@ -495,13 +552,20 @@ public class PhotonFile {
     }
 
     public void calculate(IPhotonProgress progres) throws Exception {
-        PhotonFileLayer.calculateLayers(photonFileHeader, layers, margin, progres);
         resetMarginAndIslandInfo();
+        PhotonFileLayer.calculateLayers(this, progres);
     }
 
     public void calculate(int layerNo, int limit) throws Exception {
-        PhotonFileLayer.calculateLayers(photonFileHeader, layers, margin, layerNo, limit);
-        resetMarginAndIslandInfo();
+        PhotonFileLayer.calculateLayers(this, layerNo, limit);
+//        resetMarginAndIslandInfo();
+    }
+
+    public void restartIslandInfo() {
+        getIslandLayers().clear();
+        getMultiLayerIslands().clear();
+        islandList = new StringBuilder();
+        islandLayerCount = 0;
     }
 
     private void resetMarginAndIslandInfo() {
@@ -590,6 +654,25 @@ public class PhotonFile {
         photonFileHeader.setAntiAliasingLevel(levels);
     }
 
+
+    public void removeIslands(Set<PhotonMultiLayerIsland> islandsToRemove, IPhotonProgress progress) throws Exception {
+        SortedSet<PhotonMultiLayerIsland> tmpSet = new TreeSet(islandsToRemove);
+        int firstLayer = tmpSet.first().getStart();
+        int lastLayer = tmpSet.last().getEnd();
+        for (int layerNo = firstLayer; layerNo <= lastLayer; layerNo++) {
+            int finalLayerNo = layerNo;
+            SortedSet<PhotonMultiLayerIsland> inThisLayer = tmpSet.stream()
+                    .filter(island -> island.getStart() <= finalLayerNo && island.getEnd() >= finalLayerNo)
+                    .collect(Collectors.toCollection(TreeSet::new));
+            removeIslands(inThisLayer, layerNo);
+            progress.showInfo(Integer.toString(layerNo));
+        }
+    }
+
+    private void removeIslands(Set<PhotonMultiLayerIsland> islandsToRemove, int layerNo) throws Exception {
+        this.getLayer(layerNo).removeIslands(islandsToRemove);
+        calculate(layerNo, 1);
+    }
 
 }
 
