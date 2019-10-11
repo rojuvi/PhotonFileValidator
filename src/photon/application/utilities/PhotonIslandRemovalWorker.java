@@ -93,6 +93,7 @@ public class PhotonIslandRemovalWorker extends SwingWorker<Integer, String> impl
             e.printStackTrace();
             return 0;
         }
+        islandsToRemove = null;
         return 1;
     }
 }

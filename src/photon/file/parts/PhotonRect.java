@@ -102,4 +102,8 @@ public class PhotonRect implements Comparable {
         if (i != 0) return i;
         return Integer.compare(y2, other.getY2());
     }
+
+    public int getArea() {
+        return (x2-x1+y2-y1)/2;
+    }
 }
