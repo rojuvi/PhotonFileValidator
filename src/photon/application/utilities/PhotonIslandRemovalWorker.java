@@ -31,6 +31,8 @@ import photon.file.parts.IPhotonProgress;
 import photon.file.parts.PhotonMultiLayerIsland;
 
 import javax.swing.*;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.SortedSet;
 
 /**
@@ -82,18 +84,27 @@ public class PhotonIslandRemovalWorker extends SwingWorker<Integer, String> impl
         if (islandsToRemove == null) {
             islandsToRemove = photonFile.getMultiLayerIslands();
         }
-        int start = islandsToRemove.first().getStart();
-        int end = islandsToRemove.last().getEnd();
-        removeIslandsDialog.setMinProgress(start - 1);
-        removeIslandsDialog.setMaxProgress(end);
-        removeIslandsDialog.setProgress(start - 1);
+        Set<Integer> layers = islandLayers(islandsToRemove);
+        removeIslandsDialog.setMinProgress(0);
+        removeIslandsDialog.setMaxProgress(layers.size());
+        removeIslandsDialog.setProgress(0);
         try {
-            mainForm.photonFile.removeIslands(islandsToRemove, this);
+            mainForm.photonFile.removeIslands(islandsToRemove, layers, this);
         } catch (Exception e) {
             e.printStackTrace();
             return 0;
         }
         islandsToRemove = null;
         return 1;
+    }
+
+    private Set<Integer> islandLayers(SortedSet<PhotonMultiLayerIsland> islandsToRemove) {
+        Set<Integer> layers = new HashSet<>();
+        islandsToRemove.forEach(island -> {
+            for (int i = island.getStart(); i <= island.getEnd(); i++) {
+                layers.add(i);
+            }
+        });
+        return layers;
     }
 }

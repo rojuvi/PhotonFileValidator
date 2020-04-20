@@ -646,8 +646,8 @@ public class PhotonFile {
 
     private void reduceAaLevels(int levels) {
         // delete any layers to the correct count, as we are to recalc the AA anyway
-        for(PhotonFileLayer photonFileLayer : layers) {
-            while (photonFileLayer.getAntiAlias().size()>(levels-1)) {
+        for (PhotonFileLayer photonFileLayer : layers) {
+            while (photonFileLayer.getAntiAlias().size() > (levels - 1)) {
                 photonFileLayer.getAntiAlias().remove(0);
             }
         }
@@ -655,17 +655,15 @@ public class PhotonFile {
     }
 
 
-    public void removeIslands(Set<PhotonMultiLayerIsland> islandsToRemove, IPhotonProgress progress) throws Exception {
-        SortedSet<PhotonMultiLayerIsland> tmpSet = new TreeSet(islandsToRemove);
-        int firstLayer = tmpSet.first().getStart();
-        int lastLayer = tmpSet.last().getEnd();
-        for (int layerNo = firstLayer; layerNo <= lastLayer; layerNo++) {
-            int finalLayerNo = layerNo;
-            SortedSet<PhotonMultiLayerIsland> inThisLayer = tmpSet.stream()
-                    .filter(island -> island.getStart() <= finalLayerNo && island.getEnd() >= finalLayerNo)
-                    .collect(Collectors.toCollection(TreeSet::new));
+    public void removeIslands(SortedSet<PhotonMultiLayerIsland> islandsToRemove, Set<Integer> layers, IPhotonProgress progress) throws Exception {
+        int count = 1;
+        for (int layerNo : layers) {
+            SortedSet<PhotonMultiLayerIsland> inThisLayer = islandsToRemove.stream()
+                .filter(island -> island.getStart() <= layerNo && island.getEnd() >= layerNo)
+                .collect(Collectors.toCollection(TreeSet::new));
             removeIslands(inThisLayer, layerNo);
-            progress.showInfo(Integer.toString(layerNo));
+            progress.showInfo(Integer.toString(count));
+            count++;
         }
     }
 

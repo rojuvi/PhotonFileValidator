@@ -127,6 +127,7 @@ public class RemoveIslandsDialog extends JDialog {
     public void setInformation(PhotonFile photonFile) {
         this.photonFile = photonFile;
         this.multiLayerIslands = photonFile.getMultiLayerIslands();
+        this.currentSelected = null;
         filterIslands();
         addIslandsToList();
         activate();
@@ -135,6 +136,7 @@ public class RemoveIslandsDialog extends JDialog {
     private void addIslandsToList() {
         islandList.removeAll();
         checkboxes.clear();
+        selectedIslands.clear();
         int i = 0;
         islandList.setLayout(new GridLayoutManager(this.filteredIslands.size() + 1, 2, new Insets(0, 0, 0, 0), -1, -1));
         for (PhotonMultiLayerIsland multiLayerIsland : this.filteredIslands) {
@@ -162,37 +164,7 @@ public class RemoveIslandsDialog extends JDialog {
 
             @Override
             public void mousePressed(MouseEvent e) {
-                image.drawLayer(photonFile.getLayer(multiLayerIsland.getStart()), photonFile.getMargin());
-                selectedIsland = multiLayerIsland;
-                int posX = multiLayerIsland.getRect().getX1() + (multiLayerIsland.getRect().getX2() - multiLayerIsland.getRect().getX1()) / 2 - (imageScroll.getWidth() / 2);
-                if (posX < 0) {
-                    posX = 0;
-                }
-                int posY = multiLayerIsland.getRect().getY1() + (multiLayerIsland.getRect().getY2() - multiLayerIsland.getRect().getY1()) / 2 - (imageScroll.getHeight() / 2);
-                if (posY < 0) {
-                    posY = 0;
-                }
-                imageScroll.getHorizontalScrollBar().setValue(posX);
-                imageScroll.getVerticalScrollBar().setValue(posY);
-                imageScroll.getHorizontalScrollBar().repaint();
-                imageScroll.getVerticalScrollBar().repaint();
-                imageScroll.repaint();
-                if (currentSelected != null) {
-                    currentSelected.setFont(currentSelected.getFont().deriveFont(Font.PLAIN));
-                    currentSelected.repaint();
-                }
-                jLabel.setFont(jLabel.getFont().deriveFont(Font.BOLD));
-                jLabel.repaint();
-                currentSelected = jLabel;
-
-                layerSlider.setEnabled(true);
-                layerSlider.setMaximum(multiLayerIsland.getEnd() + 5);
-                layerSlider.setMinimum(multiLayerIsland.getStart());
-                layerSlider.setValue(multiLayerIsland.getStart());
-                layerSlider.repaint();
-
-                image.drawRect(multiLayerIsland.getRect(), 5);
-                image.repaint();
+                showIsland(jLabel, multiLayerIsland);
             }
 
             @Override
@@ -216,6 +188,7 @@ public class RemoveIslandsDialog extends JDialog {
         }
 
         checkbox.addChangeListener(e -> {
+            showIsland(jLabel, multiLayerIsland);
             if (checkbox.isSelected()) {
                 selectedIslands.add(multiLayerIsland);
             } else {
@@ -229,6 +202,9 @@ public class RemoveIslandsDialog extends JDialog {
         if (!filteredIslands.contains(multiLayerIsland)) {
             checkbox.setVisible(false);
             jLabel.setVisible(false);
+        }
+        if (currentSelected == null) {
+            showIsland(jLabel, multiLayerIsland);
         }
     }
 
@@ -259,6 +235,8 @@ public class RemoveIslandsDialog extends JDialog {
             removeFiltered.setEnabled(false);
         }
         islandList.setEnabled(true);
+        layerNumberSpinner.setEnabled(true);
+        boxSizeSpinner.setEnabled(true);
         contentPane.repaint();
     }
 
@@ -268,6 +246,8 @@ public class RemoveIslandsDialog extends JDialog {
         removeSelectedButton.setEnabled(false);
         removeFiltered.setEnabled(false);
         islandList.setEnabled(false);
+        layerNumberSpinner.setEnabled(false);
+        boxSizeSpinner.setEnabled(false);
         contentPane.repaint();
     }
 
@@ -277,6 +257,40 @@ public class RemoveIslandsDialog extends JDialog {
 
     private boolean anyFilteredIslands() {
         return !filteredIslands.isEmpty();
+    }
+
+    private void showIsland(JLabel jLabel, PhotonMultiLayerIsland multiLayerIsland) {
+        image.drawLayer(photonFile.getLayer(multiLayerIsland.getStart()), photonFile.getMargin());
+        selectedIsland = multiLayerIsland;
+        int posX = multiLayerIsland.getRect().getX1() + (multiLayerIsland.getRect().getX2() - multiLayerIsland.getRect().getX1()) / 2 - (imageScroll.getWidth() / 2);
+        if (posX < 0) {
+            posX = 0;
+        }
+        int posY = multiLayerIsland.getRect().getY1() + (multiLayerIsland.getRect().getY2() - multiLayerIsland.getRect().getY1()) / 2 - (imageScroll.getHeight() / 2);
+        if (posY < 0) {
+            posY = 0;
+        }
+        imageScroll.getHorizontalScrollBar().setValue(posX);
+        imageScroll.getVerticalScrollBar().setValue(posY);
+        imageScroll.getHorizontalScrollBar().repaint();
+        imageScroll.getVerticalScrollBar().repaint();
+        imageScroll.repaint();
+        if (currentSelected != null) {
+            currentSelected.setFont(currentSelected.getFont().deriveFont(Font.PLAIN));
+            currentSelected.repaint();
+        }
+        jLabel.setFont(jLabel.getFont().deriveFont(Font.BOLD));
+        jLabel.repaint();
+        currentSelected = jLabel;
+
+        layerSlider.setEnabled(true);
+        layerSlider.setMaximum(multiLayerIsland.getEnd() + 5);
+        layerSlider.setMinimum(multiLayerIsland.getStart());
+        layerSlider.setValue(multiLayerIsland.getStart());
+        layerSlider.repaint();
+
+        image.drawRect(multiLayerIsland.getRect(), 5);
+        image.repaint();
     }
 
     {
