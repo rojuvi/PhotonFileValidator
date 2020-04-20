@@ -113,6 +113,11 @@ This dialog allow you to automatically fix pixel related problems, where a small
 
 Remember to save the file after it has been fixed.
 
+## Remove islands
+Sometimes the rest of the problems are parts of the object that are not supported and the can extend for some layers. In those cases, you can use the Remove Islands utility to remove those "islands" from all the affected layers at the same time.
+The dialog allow you to filter islands by layer count and size, and batch remove all filtered islands. You can also select the specific islands you want to remove and delete them by clicking the Remove Selected button.
+There is also a display area and a list of the islands so you can check them individually using the layer slide and then decide what to do with them.
+
 ## Print Margin
 Your printer might have issues printing close to the border. To avoid this, you can optional set a safety margin. When a safty margin is set, the application will check that all model layers is not printed outside the margin.
 
