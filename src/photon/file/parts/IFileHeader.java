@@ -24,12 +24,45 @@
 
 package photon.file.parts;
 
-/**
- * by bn on 05/07/2018.
- */
-public class DummyPhotonLoadProgress implements IPhotonProgress {
-    @Override
-    public void showInfo(String str) {
+import java.util.List;
 
-    }
+public interface IFileHeader {
+
+    String getInformation();
+    int getNumberOfLayers();
+
+    int getResolutionY();
+    int getResolutionX();
+
+    float getBuildAreaX();
+    float getBuildAreaY();
+
+    int getBottomLayers();
+    void setBottomLayers(int bottomLayers);
+
+    float getLayerHeight();
+
+    float getExposureTimeSeconds();
+
+    float getBottomExposureTimeSeconds();
+    void setExposureBottomTimeSeconds(float exposureBottomTimeSeconds);
+
+    void setExposureTimeSeconds(float exposureTimeSeconds);
+    float getNormalExposure();
+
+    float getOffTimeSeconds();
+    void setOffTimeSeconds(float offTimeSeconds);
+
+    int getPrintTimeSeconds();
+    boolean isMirrored();
+
+    boolean hasAA();
+    int getAALevels();
+    void setAALevels(int levels, List<PhotonFileLayer> layers);
+
+    int getVersion();
+    void setFileVersion(int i);
+
+    int getByteSize();
+    void unLink();
 }

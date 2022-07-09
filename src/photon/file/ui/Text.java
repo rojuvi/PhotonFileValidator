@@ -22,14 +22,17 @@
  * SOFTWARE.
  */
 
-package photon.api.server;
+package photon.file.ui;
 
-/**
- * Created by bn on 29/07/2018.
- */
-public class ApiServer {
+public class Text {
 
-    public ApiServer() {
-
+    public static String formatSeconds(float time) {
+        if (time % 1 == 0) {
+            return String.format("%.0fs", time);
+        } else {
+            return String.format("%.1fs", time);
+        }
     }
+
+
 }

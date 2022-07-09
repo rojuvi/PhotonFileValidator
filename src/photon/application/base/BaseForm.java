@@ -35,6 +35,7 @@ import photon.application.utilities.PhotonPlayWorker;
 import photon.file.PhotonFile;
 import photon.file.parts.PhotonFileLayer;
 import photon.file.parts.PhotonFilePreview;
+import photon.file.parts.PhotonLayer;
 import photon.file.ui.PhotonLayerImage;
 import photon.file.ui.PhotonPreviewImage;
 import photon.file.ui.ScrollPosition;
@@ -71,7 +72,7 @@ public class BaseForm {
         d.setFilenameFilter(new FilenameFilter() {
             @Override
             public boolean accept(File file, String s) {
-                return s.contains(".photon") || s.contains(".cbddlp");
+                return s.contains(".photon") || s.contains(".cbddlp") || s.contains(".photons");
             }
         });
         d.setVisible(true);
@@ -168,7 +169,7 @@ public class BaseForm {
 
     public void showLayerInformation(int layer, PhotonFileLayer fileLayer) {
         me.layerNo.setForeground(fileLayer.getIsLandsCount() > 0 ? Color.red : Color.black);
-        me.layerNo.setText("Layer " + layer + "/" + (me.photonFile.getLayerCount() - 1) + (me.photonFile.hasAA()?" AA("+me.photonFile.getPhotonFileHeader().getAntiAliasingLevel()+")" : ""));
+        me.layerNo.setText("Layer " + layer + "/" + (me.photonFile.getLayerCount() - 1) + (me.photonFile.hasAA()?" AA("+me.photonFile.getPhotonFileHeader().getAALevels()+")" : ""));
         me.layerZ.setText(String.format("Z: %.4f mm", fileLayer.getLayerPositionZ()));
         me.layerExposure.setText(String.format("Exposure: %.1fs", fileLayer.getLayerExposure()));
         me.layerOfftime.setText(String.format("Off Time: %.1fs", fileLayer.getLayerOffTime()));
@@ -176,7 +177,7 @@ public class BaseForm {
 
     public void playLayerInformation(int layer, int aaLevel, PhotonFileLayer fileLayer) {
         me.layerNo.setForeground(fileLayer.getIsLandsCount() > 0 ? Color.red : Color.black);
-        me.layerNo.setText("Layer " + layer + "/" + (me.photonFile.getLayerCount() - 1) + (me.photonFile.hasAA()?" AA("+aaLevel+"/"+me.photonFile.getPhotonFileHeader().getAntiAliasingLevel()+")" : ""));
+        me.layerNo.setText("Layer " + layer + "/" + (me.photonFile.getLayerCount() - 1) + (me.photonFile.hasAA()?" AA("+aaLevel+"/"+me.photonFile.getPhotonFileHeader().getAALevels()+")" : ""));
         me.layerZ.setText(String.format("Z: %.4f mm", fileLayer.getLayerPositionZ()));
         me.layerExposure.setText(String.format("Exposure: %.1fs", fileLayer.getLayerExposure()));
         me.layerOfftime.setText(String.format("Off Time: %.1fs", fileLayer.getLayerOffTime()));
@@ -388,6 +389,7 @@ public class BaseForm {
 
     public void calc() {
         if (me.photonFile != null) {
+            ((PhotonLayerImage) me.layerImage).setMirrored(me.photonFile.getPhotonFileHeader().isMirrored());
             calcWorker = new PhotonCalcWorker(me);
             calcWorker.execute();
         }
@@ -431,6 +433,27 @@ public class BaseForm {
 
     }
 
+    public void removeAllIslands() {
+        int layerNo = getLayer();
+        PhotonFileLayer fileLayer = photonFile.getLayer(layerNo);
+        PhotonLayer layer = fileLayer.getLayer();
+
+        if (layer.removeIslands() > 0) {
+            try {
+                fileLayer.saveLayer(layer);
+                photonFile.calculate(layerNo);
+
+                if (layerNo < photonFile.getLayerCount() - 1) {
+                    photonFile.calculate(layerNo + 1);
+                }
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
+
+            changeLayer();
+            showMarginAndIslandInformation();
+        }
+    }
 
     public void handleKeyEvent(KeyEvent key) {
         if (me.tabbedPane.getSelectedIndex()==0) {

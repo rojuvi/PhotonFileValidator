@@ -24,11 +24,9 @@
 
 package photon.application.utilities;
 
-import com.apple.eio.FileManager;
 import photon.application.MainForm;
 
 import javax.swing.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.File;
@@ -108,7 +106,7 @@ public class MainUtils {
         f.setIconImages(icons);
     }
 
-    public static boolean isPhotonFile(File file) {return file.exists() && file.isFile() && (file.getName().toLowerCase().endsWith("photon") || (file.getName().toLowerCase().endsWith("cbddlp")));}
+    public static boolean isPhotonFile(File file) {return file.exists() && file.isFile() && (file.getName().toLowerCase().endsWith("photon") || (file.getName().toLowerCase().endsWith("cbddlp")) || (file.getName().toLowerCase().endsWith("photons")));}
 
     private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
@@ -189,5 +187,13 @@ public class MainUtils {
         }
     }
 
-
+    public static int getSystemDefaultModifierMask() {
+        int mask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+        if (mask == Event.META_MASK) {
+            return KeyEvent.META_DOWN_MASK;
+        } else if (mask == Event.ALT_MASK) {
+            return KeyEvent.ALT_DOWN_MASK;
+        }
+        return KeyEvent.CTRL_DOWN_MASK;
+    }
 }
